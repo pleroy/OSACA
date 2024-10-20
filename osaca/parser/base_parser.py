@@ -42,12 +42,12 @@ class BaseParser(object):
         heuristics_x86Intel = [r"[^%][xyz]mm[0-9]", r"[^%][er][abcd]x[0-9]"]
         # 3) check for v and z vector registers and x/w general-purpose registers
         heuristics_aarch64 = [r"[vz][0-9][0-9]?\.[0-9][0-9]?[bhsd]", r"[wx][0-9]"]
-        matches = {("x86", "AT&T"): 0, ("x86", "Intel"): 0, ("aarch64", ""): 0}
+        matches = {("x86", "ATT"): 0, ("x86", "INTEL"): 0, ("aarch64", ""): 0}
 
         for h in heuristics_x86ATT:
-            matches[("x86", "AT&T")] += len(re.findall(h, file_content))
+            matches[("x86", "ATT")] += len(re.findall(h, file_content))
         for h in heuristics_x86Intel:
-            matches[("x86", "Intel")] += len(re.findall(h, file_content))
+            matches[("x86", "INTEL")] += len(re.findall(h, file_content))
         for h in heuristics_aarch64:
             matches[("aarch64", "")] += len(re.findall(h, file_content))
 

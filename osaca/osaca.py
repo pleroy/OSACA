@@ -11,7 +11,7 @@ from ruamel.yaml import YAML
 
 from osaca.db_interface import import_benchmark_output, sanity_check
 from osaca.frontend import Frontend
-from osaca.parser import BaseParser, ParserAArch64, ParserX86ATT
+from osaca.parser import BaseParser, ParserAArch64, ParserX86ATT, ParserX86Intel
 from osaca.semantics import (
     INSTR_FLAGS,
     ArchSemantics,
@@ -46,6 +46,10 @@ SUPPORTED_ARCHS = [
 DEFAULT_ARCHS = {
     "aarch64": "V2",
     "x86": "SPR",
+}
+SUPPORTED_DIALECTS = {
+    "ATT",
+    "INTEL",
 }
 
 
@@ -107,6 +111,12 @@ def create_parser(parser=None):
         help="Define architecture (SNB, IVB, HSW, BDW, SKX, CSX, ICL, ICX, SPR, ZEN1, ZEN2, ZEN3, "
         "ZEN4, TX2, N1, A64FX, TSV110, A72, M1, V2). If no architecture is given, OSACA assumes a "
         "default uarch for x86/AArch64.",
+    )
+    parser.add_argument(
+        "--dialect",
+        type=str,
+        help="Define the assembly dialect (ATT, Intel) for x86. If no dialect is given, OSACA "
+        "assumes that the ATT syntax is used.",
     )
     parser.add_argument(
         "--fixed",
@@ -232,6 +242,15 @@ def check_arguments(args, parser):
         parser.error(
             "Microarchitecture not supported. Please see --help for all valid architecture codes."
         )
+    if (args.dialect is not None and args.arch is not None and
+        MachineModel.get_isa_for_arch(args.arch) != "x86"):
+        parser.error(
+            "Dialect can only be explicitly specified for an x86 microarchitecture"
+        )
+    if args.dialect is not None and args.dialect.upper() not in SUPPORTED_DIALECTS:
+        parser.error(
+            "Assembly dialect not supported. Please see --help for all valid assembly dialects."
+        )
     if "import_data" in args and args.import_data not in supported_import_files:
         parser.error(
             "Microbenchmark not supported for data import. Please see --help for all valid "
@@ -310,14 +329,16 @@ def inspect(args, output_file=sys.stdout):
     code = args.file.read()
 
     # Detect ISA if necessary
-    arch = args.arch if args.arch is not None else DEFAULT_ARCHS[BaseParser.detect_ISA(code)]
+    detected_isa, detected_dialect = BaseParser.detect_ISA(code)
+    arch = args.arch if args.arch is not None else DEFAULT_ARCHS[detected_isa]
+    dialect = args.dialect if args.dialect is not None else detected_dialect
     print_arch_warning = False if args.arch else True
     isa = MachineModel.get_isa_for_arch(arch)
     verbose = args.verbose
     ignore_unknown = args.ignore_unknown
 
     # Parse file
-    parser = get_asm_parser(arch)
+    parser = get_asm_parser(arch, dialect)
     try:
         parsed_code = parser.parse_file(code)
     except Exception as e:
@@ -326,11 +347,11 @@ def inspect(args, output_file=sys.stdout):
             # change ISA and try again
             arch = (
                 DEFAULT_ARCHS["x86"]
-                if BaseParser.detect_ISA(code) == "aarch64"
+                if detected_isa == "aarch64"
                 else DEFAULT_ARCHS["aarch64"]
             )
             isa = MachineModel.get_isa_for_arch(arch)
-            parser = get_asm_parser(arch)
+            parser = get_asm_parser(arch, dialect)
             parsed_code = parser.parse_file(code)
         else:
             raise e
@@ -417,7 +438,7 @@ def run(args, output_file=sys.stdout):
 
 
 @lru_cache()
-def get_asm_parser(arch) -> BaseParser:
+def get_asm_parser(arch, dialect) -> BaseParser:
     """
     Helper function to create the right parser for a specific architecture.
 
@@ -427,7 +448,7 @@ def get_asm_parser(arch) -> BaseParser:
     """
     isa = MachineModel.get_isa_for_arch(arch)
     if isa == "x86":
-        return ParserX86ATT()
+        return ParserX86ATT() if dialect == "AT&T" else ParserX86Intel()
     elif isa == "aarch64":
         return ParserAArch64()
 
