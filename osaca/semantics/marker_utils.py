@@ -9,7 +9,7 @@ from osaca.parser.immediate import ImmediateOperand
 COMMENT_MARKER = {"start": "OSACA-BEGIN", "end": "OSACA-END"}
 
 
-def reduce_to_section(kernel, isa):
+def reduce_to_section(kernel, isa, dialect):
     """
     Finds OSACA markers in given kernel and returns marked section
 
@@ -19,7 +19,10 @@ def reduce_to_section(kernel, isa):
     """
     isa = isa.lower()
     if isa == "x86":
-        start, end = find_marked_kernel_x86ATT(kernel)
+        if dialect == "ATT":
+            start, end = find_marked_kernel_x86ATT(kernel)
+        elif dialect == "INTL":
+            raise NotImplementedError
     elif isa == "aarch64":
         start, end = find_marked_kernel_AArch64(kernel)
     else:
@@ -70,24 +73,27 @@ def find_marked_kernel_x86ATT(lines):
     )
 
 
-def get_marker(isa, comment=""):
+def get_marker(isa, dialect, comment=""):
     """Return tuple of start and end marker lines."""
     isa = isa.lower()
     if isa == "x86":
-        start_marker_raw = (
-            "movl      $111, %ebx # OSACA START MARKER\n"
-            ".byte     100        # OSACA START MARKER\n"
-            ".byte     103        # OSACA START MARKER\n"
-            ".byte     144        # OSACA START MARKER\n"
-        )
-        if comment:
-            start_marker_raw += "# {}\n".format(comment)
-        end_marker_raw = (
-            "movl      $222, %ebx # OSACA END MARKER\n"
-            ".byte     100        # OSACA END MARKER\n"
-            ".byte     103        # OSACA END MARKER\n"
-            ".byte     144        # OSACA END MARKER\n"
-        )
+        if dialect == "ATT":
+            start_marker_raw = (
+                "movl      $111, %ebx # OSACA START MARKER\n"
+                ".byte     100        # OSACA START MARKER\n"
+                ".byte     103        # OSACA START MARKER\n"
+                ".byte     144        # OSACA START MARKER\n"
+            )
+            if comment:
+                start_marker_raw += "# {}\n".format(comment)
+            end_marker_raw = (
+                "movl      $222, %ebx # OSACA END MARKER\n"
+                ".byte     100        # OSACA END MARKER\n"
+                ".byte     103        # OSACA END MARKER\n"
+                ".byte     144        # OSACA END MARKER\n"
+            )
+        elif dialect == "INTEL":
+            raise NotImplementedError
     elif isa == "aarch64":
         start_marker_raw = (
             "mov       x1, #111    // OSACA START MARKER\n"
@@ -101,7 +107,7 @@ def get_marker(isa, comment=""):
             ".byte     213,3,32,31 // OSACA END MARKER\n"
         )
 
-    parser = get_parser(isa)
+    parser = get_parser(isa, dialect)
     start_marker = parser.parse_file(start_marker_raw)
     end_marker = parser.parse_file(end_marker_raw)
 
