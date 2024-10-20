@@ -337,24 +337,36 @@ def inspect(args, output_file=sys.stdout):
     verbose = args.verbose
     ignore_unknown = args.ignore_unknown
 
-    # Parse file
-    parser = get_asm_parser(arch, dialect)
-    try:
-        parsed_code = parser.parse_file(code)
-    except Exception as e:
-        # probably the wrong parser based on heuristic
-        if args.arch is None:
-            # change ISA and try again
-            arch = (
-                DEFAULT_ARCHS["x86"]
-                if detected_isa == "aarch64"
-                else DEFAULT_ARCHS["aarch64"]
-            )
-            isa = MachineModel.get_isa_for_arch(arch)
-            parser = get_asm_parser(arch, dialect)
+    # Determine the combinations that should be tried based on the command line
+    # arguments.
+    combinations_to_try = ({
+        (DEFAULT_ARCHS["x86"], "ATT"),
+        (DEFAULT_ARCHS["x86"], "INTEL"),
+        (DEFAULT_ARCHS["aarch64"], None),
+    } if args.arch == None and args.dialect == None
+    else {
+        (DEFAULT_ARCHS["x86"], args.dialect.upper()),
+        (DEFAULT_ARCHS["aarch64"], None),
+    } if args.arch == None
+    else {
+        (args.arch, "ATT"),
+        (args.arch, "INTEL"),
+    } if MachineModel.get_isa_for_arch(args.arch) == "x86" and args.dialect == None
+    else {
+        (args.arch, args.dialect)
+    })
+
+    # Parse file.
+    while True:
+        parser = get_asm_parser(arch, dialect)
+        try:
             parsed_code = parser.parse_file(code)
-        else:
-            raise e
+            combinations_to_try -= {(arch, dialect)}
+        except Exception as e:
+            # Probably the wrong parser based on heuristic.
+            if not combinations_to_try:
+                raise e
+            arch, dialect = combinations_to_try.pop();
 
     # Reduce to marked kernel or chosen section and add semantics
     if args.lines:

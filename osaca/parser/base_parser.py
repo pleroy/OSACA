@@ -31,8 +31,8 @@ class BaseParser(object):
         Detect the ISA of the assembly based on the used registers and return the ISA code.
 
         :param str file_content: assembly code.
-        :return: a tuple isa, dialect describing the architecture and the assemby dialect,
-                 if appropriate.
+        :return: a tuple isa, dialect describing the architecture and the assembly dialect,
+                 if appropriate.  If there is no notion of dialect, the second element is None.
         """
         # Check for the amount of registers in the code to determine the ISA
         # 1) Check for xmm, ymm, zmm, rax, rbx, rcx, and rdx registers in x86
@@ -42,14 +42,14 @@ class BaseParser(object):
         heuristics_x86Intel = [r"[^%][xyz]mm[0-9]", r"[^%][er][abcd]x[0-9]"]
         # 3) check for v and z vector registers and x/w general-purpose registers
         heuristics_aarch64 = [r"[vz][0-9][0-9]?\.[0-9][0-9]?[bhsd]", r"[wx][0-9]"]
-        matches = {("x86", "ATT"): 0, ("x86", "INTEL"): 0, ("aarch64", ""): 0}
+        matches = {("x86", "ATT"): 0, ("x86", "INTEL"): 0, ("aarch64", None): 0}
 
         for h in heuristics_x86ATT:
             matches[("x86", "ATT")] += len(re.findall(h, file_content))
         for h in heuristics_x86Intel:
             matches[("x86", "INTEL")] += len(re.findall(h, file_content))
         for h in heuristics_aarch64:
-            matches[("aarch64", "")] += len(re.findall(h, file_content))
+            matches[("aarch64", None)] += len(re.findall(h, file_content))
 
         return max(matches.items(), key=operator.itemgetter(1))[0]
 
