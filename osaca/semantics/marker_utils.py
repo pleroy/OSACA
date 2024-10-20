@@ -15,13 +15,14 @@ def reduce_to_section(kernel, isa, dialect):
 
     :param list kernel: kernel to check
     :param str isa: ISA of given kernel
+    :param str dialect: dialect of assembly file
     :returns: `list` -- marked section of kernel as list of instruction forms
     """
     isa = isa.lower()
     if isa == "x86":
         if dialect == "ATT":
             start, end = find_marked_kernel_x86ATT(kernel)
-        elif dialect == "INTL":
+        elif dialect == "INTEL":
             raise NotImplementedError
     elif isa == "aarch64":
         start, end = find_marked_kernel_AArch64(kernel)

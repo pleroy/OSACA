@@ -70,11 +70,11 @@ class TestBaseParser(unittest.TestCase):
             self.parser.normalize_imd(imd_hex_1)
 
     def test_detect_ISA(self):
-        self.assertEqual(BaseParser.detect_ISA(self.triad_code), ("x86", "AT&T"))
-        self.assertEqual(BaseParser.detect_ISA(self.triad_code_intel), ("x86", "Intel"))
-        self.assertEqual(BaseParser.detect_ISA(self.triad_code_arm), ("aarch64", ""))
-        self.assertEqual(BaseParser.detect_ISA(self.x86_code), ("x86", "AT&T"))
-        self.assertEqual(BaseParser.detect_ISA(self.aarch64_code), ("aarch64", ""))
+        self.assertEqual(BaseParser.detect_ISA(self.triad_code), ("x86", "ATT"))
+        self.assertEqual(BaseParser.detect_ISA(self.triad_code_intel), ("x86", "INTEL"))
+        self.assertEqual(BaseParser.detect_ISA(self.triad_code_arm), ("aarch64", None))
+        self.assertEqual(BaseParser.detect_ISA(self.x86_code), ("x86", "ATT"))
+        self.assertEqual(BaseParser.detect_ISA(self.aarch64_code), ("aarch64", None))
 
     ##################
     # Helper functions
