@@ -31,8 +31,8 @@ class BaseParser(object):
         Detect the ISA of the assembly based on the used registers and return the ISA code.
 
         :param str file_content: assembly code.
-        :return: a tuple isa, dialect describing the architecture and the assembly dialect,
-                 if appropriate.  If there is no notion of dialect, the second element is None.
+        :return: a tuple isa, syntax describing the architecture and the assembly syntax,
+                 if appropriate.  If there is no notion of syntax, the second element is None.
         """
         # Check for the amount of registers in the code to determine the ISA
         # 1) Check for xmm, ymm, zmm, rax, rbx, rcx, and rdx registers in x86

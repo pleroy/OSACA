@@ -9,20 +9,20 @@ from osaca.parser.immediate import ImmediateOperand
 COMMENT_MARKER = {"start": "OSACA-BEGIN", "end": "OSACA-END"}
 
 
-def reduce_to_section(kernel, isa, dialect):
+def reduce_to_section(kernel, isa, syntax):
     """
     Finds OSACA markers in given kernel and returns marked section
 
     :param list kernel: kernel to check
     :param str isa: ISA of given kernel
-    :param str dialect: dialect of assembly file
+    :param str syntax: syntax of assembly file
     :returns: `list` -- marked section of kernel as list of instruction forms
     """
     isa = isa.lower()
     if isa == "x86":
-        if dialect == "ATT":
+        if syntax == "ATT":
             start, end = find_marked_kernel_x86ATT(kernel)
-        elif dialect == "INTEL":
+        elif syntax == "INTEL":
             raise NotImplementedError
     elif isa == "aarch64":
         start, end = find_marked_kernel_AArch64(kernel)
@@ -74,11 +74,11 @@ def find_marked_kernel_x86ATT(lines):
     )
 
 
-def get_marker(isa, dialect, comment=""):
+def get_marker(isa, syntax, comment=""):
     """Return tuple of start and end marker lines."""
     isa = isa.lower()
     if isa == "x86":
-        if dialect == "ATT":
+        if syntax == "ATT":
             start_marker_raw = (
                 "movl      $111, %ebx # OSACA START MARKER\n"
                 ".byte     100        # OSACA START MARKER\n"
@@ -93,7 +93,7 @@ def get_marker(isa, dialect, comment=""):
                 ".byte     103        # OSACA END MARKER\n"
                 ".byte     144        # OSACA END MARKER\n"
             )
-        elif dialect == "INTEL":
+        elif syntax == "INTEL":
             raise NotImplementedError
     elif isa == "aarch64":
         start_marker_raw = (
@@ -108,7 +108,7 @@ def get_marker(isa, dialect, comment=""):
             ".byte     213,3,32,31 // OSACA END MARKER\n"
         )
 
-    parser = get_parser(isa, dialect)
+    parser = get_parser(isa, syntax)
     start_marker = parser.parse_file(start_marker_raw)
     end_marker = parser.parse_file(end_marker_raw)
 

@@ -22,9 +22,9 @@ __all__ = [
 ]
 
 
-def get_parser(isa, dialect):
+def get_parser(isa, syntax):
     if isa.lower() == "x86":
-        return ParserX86ATT() if dialect == "ATT" else ParserX86Intel()
+        return ParserX86ATT() if syntax == "ATT" else ParserX86Intel()
     elif isa.lower() == "aarch64":
         return ParserAArch64()
     else:
