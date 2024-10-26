@@ -330,8 +330,8 @@ def inspect(args, output_file=sys.stdout):
 
     # Detect ISA if necessary
     detected_isa, detected_syntax = BaseParser.detect_ISA(code)
-    arch = args.arch if args.arch is not None else DEFAULT_ARCHS[detected_isa]
-    syntax = args.syntax if args.syntax is not None else detected_syntax
+    arch = args.arch if args.arch else DEFAULT_ARCHS[detected_isa]
+    syntax = args.syntax if args.syntax else detected_syntax
     print_arch_warning = False if args.arch else True
     isa = MachineModel.get_isa_for_arch(arch)
     verbose = args.verbose
@@ -343,15 +343,15 @@ def inspect(args, output_file=sys.stdout):
         (DEFAULT_ARCHS["x86"], "ATT"),
         (DEFAULT_ARCHS["x86"], "INTEL"),
         (DEFAULT_ARCHS["aarch64"], None),
-    } if args.arch == None and args.syntax == None
+    } if not args.arch and not args.syntax
     else {
         (DEFAULT_ARCHS["x86"], args.syntax.upper()),
         (DEFAULT_ARCHS["aarch64"], None),
-    } if args.arch == None
+    } if not args.arch
     else {
         (args.arch, "ATT"),
         (args.arch, "INTEL"),
-    } if MachineModel.get_isa_for_arch(args.arch) == "x86" and args.syntax == None
+    } if MachineModel.get_isa_for_arch(args.arch) == "x86" and not args.syntax
     else {
         (args.arch, args.syntax)
     })
