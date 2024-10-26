@@ -5,7 +5,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{88ef9105-2c58-41fe-ad9f-f54c96a7e8b3}</ProjectGuid>
     <ProjectHome>..\</ProjectHome>
-    <StartupFile>tests\test_parser_x86att.py</StartupFile>
+    <StartupFile>tests\test_base_parser.py</StartupFile>
     <SearchPath />
     <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>
@@ -47,6 +47,7 @@
     <Compile Include="osaca\parser\operand.py" />
     <Compile Include="osaca\parser\parser_AArch64.py" />
     <Compile Include="osaca\parser\parser_x86att.py" />
+    <Compile Include="osaca\parser\parser_x86intel.py" />
     <Compile Include="osaca\parser\prefetch.py" />
     <Compile Include="osaca\parser\register.py" />
     <Compile Include="osaca\parser\__init__.py" />

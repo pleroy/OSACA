@@ -11,7 +11,7 @@ from ruamel.yaml import YAML
 
 from osaca.db_interface import import_benchmark_output, sanity_check
 from osaca.frontend import Frontend
-from osaca.parser import BaseParser, ParserAArch64, ParserX86ATT
+from osaca.parser import BaseParser, ParserAArch64, ParserX86ATT, ParserX86Intel
 from osaca.semantics import (
     INSTR_FLAGS,
     ArchSemantics,
@@ -46,6 +46,10 @@ SUPPORTED_ARCHS = [
 DEFAULT_ARCHS = {
     "aarch64": "V2",
     "x86": "SPR",
+}
+SUPPORTED_SYNTAXES = {
+    "ATT",
+    "INTEL",
 }
 
 
@@ -107,6 +111,12 @@ def create_parser(parser=None):
         help="Define architecture (SNB, IVB, HSW, BDW, SKX, CSX, ICL, ICX, SPR, ZEN1, ZEN2, ZEN3, "
         "ZEN4, TX2, N1, A64FX, TSV110, A72, M1, V2). If no architecture is given, OSACA assumes a "
         "default uarch for x86/AArch64.",
+    )
+    parser.add_argument(
+        "--syntax",
+        type=str,
+        help="Define the assembly syntax (ATT, Intel) for x86. If no syntax is given, OSACA "
+        "assumes that the ATT syntax is used.",
     )
     parser.add_argument(
         "--fixed",
@@ -232,6 +242,14 @@ def check_arguments(args, parser):
         parser.error(
             "Microarchitecture not supported. Please see --help for all valid architecture codes."
         )
+    if args.syntax and args.arch and MachineModel.get_isa_for_arch(args.arch) != "x86":
+        parser.error(
+            "Syntax can only be explicitly specified for an x86 microarchitecture"
+        )
+    if args.syntax and args.syntax.upper() not in SUPPORTED_SYNTAXES:
+        parser.error(
+            "Assembly syntax not supported. Please see --help for all valid assembly syntaxs."
+        )
     if "import_data" in args and args.import_data not in supported_import_files:
         parser.error(
             "Microbenchmark not supported for data import. Please see --help for all valid "
@@ -310,30 +328,44 @@ def inspect(args, output_file=sys.stdout):
     code = args.file.read()
 
     # Detect ISA if necessary
-    arch = args.arch if args.arch is not None else DEFAULT_ARCHS[BaseParser.detect_ISA(code)]
+    detected_isa, detected_syntax = BaseParser.detect_ISA(code)
+    arch = args.arch if args.arch else DEFAULT_ARCHS[detected_isa]
+    syntax = args.syntax if args.syntax else detected_syntax
     print_arch_warning = False if args.arch else True
     isa = MachineModel.get_isa_for_arch(arch)
     verbose = args.verbose
     ignore_unknown = args.ignore_unknown
 
-    # Parse file
-    parser = get_asm_parser(arch)
-    try:
-        parsed_code = parser.parse_file(code)
-    except Exception as e:
-        # probably the wrong parser based on heuristic
-        if args.arch is None:
-            # change ISA and try again
-            arch = (
-                DEFAULT_ARCHS["x86"]
-                if BaseParser.detect_ISA(code) == "aarch64"
-                else DEFAULT_ARCHS["aarch64"]
-            )
-            isa = MachineModel.get_isa_for_arch(arch)
-            parser = get_asm_parser(arch)
+    # Determine the combinations that should be tried based on the command line
+    # arguments.
+    combinations_to_try = ({
+        (DEFAULT_ARCHS["x86"], "ATT"),
+        (DEFAULT_ARCHS["x86"], "INTEL"),
+        (DEFAULT_ARCHS["aarch64"], None),
+    } if not args.arch and not args.syntax
+    else {
+        (DEFAULT_ARCHS["x86"], args.syntax.upper()),
+        (DEFAULT_ARCHS["aarch64"], None),
+    } if not args.arch
+    else {
+        (args.arch, "ATT"),
+        (args.arch, "INTEL"),
+    } if MachineModel.get_isa_for_arch(args.arch) == "x86" and not args.syntax
+    else {
+        (args.arch, args.syntax)
+    })
+
+    # Parse file.
+    while True:
+        parser = get_asm_parser(arch, syntax)
+        try:
             parsed_code = parser.parse_file(code)
-        else:
-            raise e
+            combinations_to_try -= {(arch, syntax)}
+        except Exception as e:
+            # Probably the wrong parser based on heuristic.
+            if not combinations_to_try:
+                raise e
+            arch, syntax = combinations_to_try.pop();
 
     # Reduce to marked kernel or chosen section and add semantics
     if args.lines:
@@ -341,7 +373,7 @@ def inspect(args, output_file=sys.stdout):
         kernel = [line for line in parsed_code if line.line_number in line_range]
         print_length_warning = False
     else:
-        kernel = reduce_to_section(parsed_code, isa)
+        kernel = reduce_to_section(parsed_code, isa, syntax)
         # Print warning if kernel has no markers and is larger than threshold (100)
         print_length_warning = (
             True if len(kernel) == len(parsed_code) and len(kernel) > 100 else False
@@ -417,7 +449,7 @@ def run(args, output_file=sys.stdout):
 
 
 @lru_cache()
-def get_asm_parser(arch) -> BaseParser:
+def get_asm_parser(arch, syntax) -> BaseParser:
     """
     Helper function to create the right parser for a specific architecture.
 
@@ -427,7 +459,7 @@ def get_asm_parser(arch) -> BaseParser:
     """
     isa = MachineModel.get_isa_for_arch(arch)
     if isa == "x86":
-        return ParserX86ATT()
+        return ParserX86ATT() if syntax == "AT&T" else ParserX86Intel()
     elif isa == "aarch64":
         return ParserAArch64()
 

@@ -32,13 +32,13 @@ class TestMarkerUtils(unittest.TestCase):
     #################
 
     def test_marker_detection_AArch64(self):
-        kernel = reduce_to_section(self.parsed_AArch, "AArch64")
+        kernel = reduce_to_section(self.parsed_AArch, "AArch64", None)
         self.assertEqual(len(kernel), 138)
         self.assertEqual(kernel[0].line_number, 307)
         self.assertEqual(kernel[-1].line_number, 444)
 
     def test_marker_detection_x86(self):
-        kernel = reduce_to_section(self.parsed_x86, "x86")
+        kernel = reduce_to_section(self.parsed_x86, "x86", "ATT")
         self.assertEqual(len(kernel), 9)
         self.assertEqual(kernel[0].line_number, 146)
         self.assertEqual(kernel[-1].line_number, 154)
@@ -108,7 +108,7 @@ class TestMarkerUtils(unittest.TestCase):
                             bytes_end=bytes_var_2,
                         ):
                             sample_parsed = self.parser_AArch.parse_file(sample_code)
-                            sample_kernel = reduce_to_section(sample_parsed, "AArch64")
+                            sample_kernel = reduce_to_section(sample_parsed, "AArch64", None)
                             self.assertEqual(len(sample_kernel), kernel_length)
                             kernel_start = len(
                                 list(
@@ -180,7 +180,7 @@ class TestMarkerUtils(unittest.TestCase):
                             bytes_end=bytes_var_2,
                         ):
                             sample_parsed = self.parser_x86.parse_file(sample_code)
-                            sample_kernel = reduce_to_section(sample_parsed, "x86")
+                            sample_kernel = reduce_to_section(sample_parsed, "x86", "ATT")
                             self.assertEqual(len(sample_kernel), kernel_length)
                             kernel_start = len(
                                 list(
@@ -222,7 +222,7 @@ class TestMarkerUtils(unittest.TestCase):
         for test_name, pro, kernel, epi in samples:
             code = pro + kernel + epi
             parsed = self.parser_AArch.parse_file(code)
-            test_kernel = reduce_to_section(parsed, "AArch64")
+            test_kernel = reduce_to_section(parsed, "AArch64", None)
             if kernel:
                 kernel_length = len(kernel.strip().split("\n"))
             else:
@@ -270,7 +270,7 @@ class TestMarkerUtils(unittest.TestCase):
         for test_name, pro, kernel, epi in samples:
             code = pro + kernel + epi
             parsed = self.parser_x86.parse_file(code)
-            test_kernel = reduce_to_section(parsed, "x86")
+            test_kernel = reduce_to_section(parsed, "x86", "ATT")
             if kernel:
                 kernel_length = len(kernel.strip().split("\n"))
             else:
