@@ -132,7 +132,7 @@ class ParserX86Intel(BaseParser):
         if "operand4" in result:
             operands.append(self.process_operand(result["operand4"]))
         return_dict = InstructionForm(
-            mnemonic=result["mnemonic"].split(",")[0],
+            mnemonic=result["mnemonic"],
             operands=operands,
             comment_id=" ".join(result[self.comment_id]) if self.comment_id in result else None,
         )
