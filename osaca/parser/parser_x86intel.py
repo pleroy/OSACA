@@ -29,8 +29,7 @@ class ParserX86Intel(BaseParser):
             pp.Word("01234567") + pp.Literal("O")
         ).setResultsName("value")
         decimal_number = pp.Combine(
-            pp.Optional(pp.Literal("-")) + pp.Word(pp.nums) +
-            pp.Optional(pp.Word(".", pp.nums))
+            pp.Optional(pp.Literal("-")) + pp.Word(pp.nums)
         ).setResultsName("value")
         hex_number = pp.Combine(
             pp.Word(pp.hexnums) + pp.Literal("H")
@@ -94,4 +93,3 @@ class ParserX86Intel(BaseParser):
                 return imd.value
         # identifier
         return imd
-
