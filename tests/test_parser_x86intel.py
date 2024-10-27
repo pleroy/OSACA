@@ -58,7 +58,7 @@ class TestParserX86Intel(unittest.TestCase):
         instruction_form_2 = InstructionForm(
             mnemonic="ret",
             operands=[
-                {"immediate": {"name": "0", "value": 0}},
+                {"immediate": {"value": 0}},
             ],
             directive_id=None,
             comment_id=None,

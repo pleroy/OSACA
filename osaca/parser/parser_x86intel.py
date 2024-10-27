@@ -167,7 +167,7 @@ class ParserX86Intel(BaseParser):
                 if '.' in imd.value:
                     return float(imd.value)
                 # Now parse depending on the base.
-                base = {'B': 2, 'O': 8, 'H': 16}.get(imd.value[-1], default=10)
+                base = {'B': 2, 'O': 8, 'H': 16}.get(imd.value[-1], 10)
                 value = 0
                 negative = imd.value[0] == '-'
                 start = +negative
