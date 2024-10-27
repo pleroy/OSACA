@@ -32,6 +32,47 @@ class TestParserX86Intel(unittest.TestCase):
             "; comment ;; comment",
         )
 
+    def test_parse_instruction(self):
+        instr1 = "\tsub\trsp, 296\t\t\t\t; 00000128H"
+
+        parsed_1 = self.parser.parse_instruction(instr1)
+
+        self.assertEqual(parsed_1.mnemonic, "sub")
+        self.assertEqual(parsed_1.operands[0].name, "rsp")
+        self.assertEqual(parsed_1.operands[1].value, 296)
+        self.assertEqual(parsed_1.comment, "00000128H")
+
+    def test_parse_line(self):
+        line_comment = "; -- Begin  main"
+        line_instruction = "\tret\t0"
+
+        instruction_form_1 = InstructionForm(
+            mnemonic=None,
+            operands=[],
+            directive_id=None,
+            comment_id="-- Begin main",
+            label_id=None,
+            line="; -- Begin  main",
+            line_number=1,
+        )
+        instruction_form_2 = InstructionForm(
+            mnemonic="ret",
+            operands=[
+                {"immediate": {"name": "0", "value": 0}},
+            ],
+            directive_id=None,
+            comment_id=None,
+            label_id=None,
+            line="\tret\t0",
+            line_number=2,
+        )
+
+        parsed_1 = self.parser.parse_line(line_comment, 1)
+        parsed_2 = self.parser.parse_line(line_instruction, 2)
+
+        self.assertEqual(parsed_1, instruction_form_1)
+        self.assertEqual(parsed_2, instruction_form_2)
+
     def test_normalize_imd(self):
         imd_binary = ImmediateOperand(value="1001111B")
         imd_octal = ImmediateOperand(value="117O")
