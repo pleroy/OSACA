@@ -84,9 +84,12 @@ class ParserX86Intel(BaseParser):
                 elif imd.value[-1] == 'H':
                     base = 16
                 value = 0
-                for c in imd.value[:-1]:
+                negative = imd.value[0] == '-'
+                start = +negative
+                stop = len(imd.value) if base == 10 else -1
+                for c in imd.value[start:stop]:
                     value = value * base + int(c, base)
-                return value
+                return -value if negative else value
             else:
                 return imd.value
         # identifier
