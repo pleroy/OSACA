@@ -32,15 +32,45 @@ class TestParserX86Intel(unittest.TestCase):
             "; comment ;; comment",
         )
 
+    def test_label_parser(self):
+        self.assertEqual(self._get_label(self.parser, "main:")[0].name, "main")
+        self.assertEqual(self._get_label(self.parser, "$$B1?10:")[0].name, "$$B1?10")
+        self.assertEqual(
+            self._get_label(self.parser, "$LN9:\tcall\t__CheckForDebuggerJustMyCode")[0].name,
+            "$LN9"
+        )
+        self.assertEqual(
+            self._get_label(self.parser, "$LN9:\tcall\t__CheckForDebuggerJustMyCode")[1],
+            InstructionForm(
+                mnemonic="call",
+                operands=[
+                    {"identifier": {"name": "__CheckForDebuggerJustMyCode"}},
+                ],
+                directive_id=None,
+                comment_id=None,
+                label_id=None,
+                line=None,
+                line_number=None,
+            )
+        )
+        with self.assertRaises(ParseException):
+            self._get_label(self.parser, "\t.cfi_startproc")
+
     def test_parse_instruction(self):
         instr1 = "\tsub\trsp, 296\t\t\t\t; 00000128H"
+        instr2 = "  fst ST(3)\t; Good ol' x87."
 
         parsed_1 = self.parser.parse_instruction(instr1)
+        parsed_2 = self.parser.parse_instruction(instr2)
 
         self.assertEqual(parsed_1.mnemonic, "sub")
         self.assertEqual(parsed_1.operands[0].name, "rsp")
         self.assertEqual(parsed_1.operands[1].value, 296)
         self.assertEqual(parsed_1.comment, "00000128H")
+
+        self.assertEqual(parsed_2.mnemonic, "fst")
+        self.assertEqual(parsed_2.operands[0].name, "ST(3)")
+        self.assertEqual(parsed_2.comment, "Good ol' x87.")
 
     def test_parse_line(self):
         line_comment = "; -- Begin  main"
@@ -103,6 +133,9 @@ class TestParserX86Intel(unittest.TestCase):
                 "comment"
             ]
         )
+
+    def _get_label(self, parser, label):
+        return parser.process_operand(parser.label.parseString(label, parseAll=True).asDict())
 
     @staticmethod
     def _find_file(name):

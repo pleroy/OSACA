@@ -6,6 +6,7 @@ from osaca.parser import BaseParser
 from osaca.parser.instruction_form import InstructionForm
 from osaca.parser.identifier import IdentifierOperand
 from osaca.parser.immediate import ImmediateOperand
+from osaca.parser.label import LabelOperand
 from osaca.parser.register import RegisterOperand
 
 class ParserX86Intel(BaseParser):
@@ -26,18 +27,21 @@ class ParserX86Intel(BaseParser):
         # Numeric literal.
         binary_number = pp.Combine(
             pp.Word("01") + pp.Literal("B")
-        ).setResultsName("value")
+        )
         octal_number = pp.Combine(
             pp.Word("01234567") + pp.Literal("O")
-        ).setResultsName("value")
+        )
         decimal_number = pp.Combine(
             pp.Optional(pp.Literal("-")) + pp.Word(pp.nums)
-        ).setResultsName("value")
+        )
         hex_number = pp.Combine(
             pp.Word(pp.hexnums) + pp.Literal("H")
-        ).setResultsName("value")
+        )
         float_number = pp.Combine(
             pp.Optional(pp.Literal("-")) + pp.Word(pp.nums) + pp.Word(".", pp.nums)
+        ).setResultsName("value")
+        integer_number = (
+            binary_number ^ octal_number ^ decimal_number ^ hex_number
         ).setResultsName("value")
 
         # Comment.
@@ -45,14 +49,27 @@ class ParserX86Intel(BaseParser):
             pp.ZeroOrMore(pp.Word(pp.printables))
         ).setResultsName(self.comment_id)
 
+        # Identifier.  Note that $ is not mentioned in the ASM386 Assembly Language Reference,
+        # but it is mentioned in the MASM syntax:
+        # https://learn.microsoft.com/en-us/cpp/assembler/masm/masm-bnf-grammar?view=msvc-170.
+        first = pp.Word(pp.alphas + "$?@_", exact=1)
+        rest = pp.Word(pp.alphanums + "$?@_")
+        identifier = pp.Group(
+            pp.Combine(first + pp.Optional(rest)).setResultsName("name")
+        ).setResultsName("identifier")
+
         # Register.
         self.register = pp.Group(
+            pp.Combine(
+                pp.Literal("ST(") + pp.Word("01234567") + pp.Literal(")")
+            ).setResultsName("name") |
             pp.Word(pp.alphas, pp.alphanums).setResultsName("name")
         ).setResultsName(self.register_id)
 
         # Immediate.
+        # TODO: Support complex expressions?
         immediate = pp.Group(
-            (binary_number | octal_number | decimal_number | hex_number | float_number)
+            integer_number ^ float_number ^ identifier
         ).setResultsName(self.immediate_id)
 
         # Instructions.
@@ -60,10 +77,10 @@ class ParserX86Intel(BaseParser):
             pp.alphas, pp.alphanums
         ).setResultsName("mnemonic")
         operand_first = pp.Group(
-            self.register ^ immediate
+            self.register ^ immediate ^ identifier
         )
         operand_rest = pp.Group(
-            self.register ^ immediate
+            self.register ^ immediate ^ identifier
         )
         self.instruction_parser = (
             mnemonic
@@ -76,6 +93,13 @@ class ParserX86Intel(BaseParser):
             + pp.Optional(operand_rest.setResultsName("operand4"))
             + pp.Optional(self.comment)
         )
+
+        # Label.
+        self.label = pp.Group(
+            identifier.setResultsName("name")
+            + pp.Literal(":")
+            + pp.Optional(self.instruction_parser)
+        ).setResultsName(self.label_id)
 
     def parse_line(self, line, line_number=None):
         """
@@ -96,6 +120,17 @@ class ParserX86Intel(BaseParser):
         except pp.ParseException:
             pass
 
+        # 2. Parse label
+        if not result:
+            try:
+                # returns tuple with label operand and comment, if any
+                result = self.process_operand(self.label.parseString(line, parseAll=True).asDict())
+                instruction_form.label = result[0].name
+                if result[1] is not None:
+                    instruction_form.comment = " ".join(result[1])
+            except pp.ParseException:
+                pass
+
         # 4. Parse instruction
         if not result:
             try:
@@ -109,6 +144,37 @@ class ParserX86Intel(BaseParser):
             instruction_form.comment = result.comment
         return instruction_form
 
+    def make_instruction(self, parse_result):
+        """
+        Parse instruction in asm line.
+
+        :param parse_result: tuple resulting from calling `parseString` on the `instruction_parser`.
+        :returns: `dict` -- parsed instruction form
+        """
+        operands = []
+        # Add operands to list
+        # Check first operand
+        if "operand1" in parse_result:
+            operands.append(self.process_operand(parse_result["operand1"]))
+        # Check second operand
+        if "operand2" in parse_result:
+            operands.append(self.process_operand(parse_result["operand2"]))
+        # Check third operand
+        if "operand3" in parse_result:
+            operands.append(self.process_operand(parse_result["operand3"]))
+        # Check fourth operand
+        if "operand4" in parse_result:
+            operands.append(self.process_operand(parse_result["operand4"]))
+        return_dict = InstructionForm(
+            mnemonic=parse_result["mnemonic"],
+            operands=operands,
+            label_id=None,
+            comment_id=" ".join(parse_result[self.comment_id])
+                       if self.comment_id in parse_result else None,
+        )
+
+        return return_dict
+
     def parse_instruction(self, instruction):
         """
         Parse instruction in asm line.
@@ -116,33 +182,18 @@ class ParserX86Intel(BaseParser):
         :param str instruction: Assembly line string.
         :returns: `dict` -- parsed instruction form
         """
-        result = self.instruction_parser.parseString(instruction, parseAll=True).asDict()
-        operands = []
-        # Add operands to list
-        # Check first operand
-        if "operand1" in result:
-            operands.append(self.process_operand(result["operand1"]))
-        # Check second operand
-        if "operand2" in result:
-            operands.append(self.process_operand(result["operand2"]))
-        # Check third operand
-        if "operand3" in result:
-            operands.append(self.process_operand(result["operand3"]))
-        # Check fourth operand
-        if "operand4" in result:
-            operands.append(self.process_operand(result["operand4"]))
-        return_dict = InstructionForm(
-            mnemonic=result["mnemonic"],
-            operands=operands,
-            comment_id=" ".join(result[self.comment_id]) if self.comment_id in result else None,
+        return self.make_instruction(
+            self.instruction_parser.parseString(instruction, parseAll=True).asDict()
         )
-
-        return return_dict
 
     def process_operand(self, operand):
         """Post-process operand"""
+        if self.identifier in operand:
+            return self.process_identifier(operand[self.identifier])
         if self.immediate_id in operand:
             return self.process_immediate(operand[self.immediate_id])
+        if self.label_id in operand:
+            return self.process_label(operand[self.label_id])
         if self.register_id in operand:
             return self.process_register(operand[self.register_id])
         return operand
@@ -152,11 +203,24 @@ class ParserX86Intel(BaseParser):
             name=operand["name"],
         )
 
+    def process_label(self, label):
+        """Post-process label asm line"""
+        # Remove duplicated 'name' level due to identifier.
+        label["name"] = label["name"]["name"]
+        return (LabelOperand(name=label["name"]),
+                self.make_instruction(label) if "mnemonic" in label else None)
+
     def process_immediate(self, immediate):
         """Post-process immediate operand"""
+        if "identifier" in immediate:
+            # actually an identifier, change declaration
+            return self.process_identifier(immediate["identifier"])
         new_immediate = ImmediateOperand(value=immediate["value"])
         new_immediate.value = self.normalize_imd(new_immediate)
         return new_immediate
+
+    def process_identifier(self, identifier):
+        return IdentifierOperand(name=identifier["name"])
 
     def normalize_imd(self, imd):
         """Normalize immediate to decimal based representation"""
