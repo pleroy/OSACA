@@ -32,6 +32,28 @@ class TestParserX86Intel(unittest.TestCase):
             "; comment ;; comment",
         )
 
+    def test_label_parser(self):
+        self.assertEqual(self._get_label(self.parser, "main:")[0].name, "main")
+        self.assertEqual(self._get_label(self.parser, "$$B1?10:")[0].name, "$$B1?10")
+        self.assertEqual(
+            self._get_label(self.parser, "$LN9:\tcall\t__CheckForDebuggerJustMyCode")[0].name, "$LN9")
+        self.assertEqual(
+            self._get_label(self.parser, "$LN9:\tcall\t__CheckForDebuggerJustMyCode")[1],
+                InstructionForm(
+                    mnemonic="call",
+                    operands=[
+                        {"identifier": {"name": "__CheckForDebuggerJustMyCode"}},
+                    ],
+                    directive_id=None,
+                    comment_id=None,
+                    label_id=None,
+                    line=None,
+                    line_number=None,
+                )
+            )
+        with self.assertRaises(ParseException):
+            self._get_label(self.parser, "\t.cfi_startproc")
+
     def test_parse_instruction(self):
         instr1 = "\tsub\trsp, 296\t\t\t\t; 00000128H"
 
@@ -103,6 +125,9 @@ class TestParserX86Intel(unittest.TestCase):
                 "comment"
             ]
         )
+
+    def _get_label(self, parser, label):
+        return parser.process_operand(parser.label.parseString(label, parseAll=True).asDict())
 
     @staticmethod
     def _find_file(name):
