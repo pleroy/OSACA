@@ -36,21 +36,23 @@ class TestParserX86Intel(unittest.TestCase):
         self.assertEqual(self._get_label(self.parser, "main:")[0].name, "main")
         self.assertEqual(self._get_label(self.parser, "$$B1?10:")[0].name, "$$B1?10")
         self.assertEqual(
-            self._get_label(self.parser, "$LN9:\tcall\t__CheckForDebuggerJustMyCode")[0].name, "$LN9")
+            self._get_label(self.parser, "$LN9:\tcall\t__CheckForDebuggerJustMyCode")[0].name,
+            "$LN9"
+        )
         self.assertEqual(
             self._get_label(self.parser, "$LN9:\tcall\t__CheckForDebuggerJustMyCode")[1],
-                InstructionForm(
-                    mnemonic="call",
-                    operands=[
-                        {"identifier": {"name": "__CheckForDebuggerJustMyCode"}},
-                    ],
-                    directive_id=None,
-                    comment_id=None,
-                    label_id=None,
-                    line=None,
-                    line_number=None,
-                )
+            InstructionForm(
+                mnemonic="call",
+                operands=[
+                    {"identifier": {"name": "__CheckForDebuggerJustMyCode"}},
+                ],
+                directive_id=None,
+                comment_id=None,
+                label_id=None,
+                line=None,
+                line_number=None,
             )
+        )
         with self.assertRaises(ParseException):
             self._get_label(self.parser, "\t.cfi_startproc")
 
