@@ -60,8 +60,10 @@ class ParserX86Intel(BaseParser):
 
         # Register.
         self.register = pp.Group(
-            pp.Word(pp.alphas, pp.alphanums).setResultsName("name") |
-            pp.Group(pp.Literal("ST"), pp.Optional(pp.Literal("(") + pp.Word("01234567") + pp.Word(")"))).setResultsName("name")
+            pp.Combine(
+                pp.Literal("ST(") + pp.Word("01234567") + pp.Literal(")")
+            ).setResultsName("name") |
+            pp.Word(pp.alphas, pp.alphanums).setResultsName("name")
         ).setResultsName(self.register_id)
 
         # Immediate.

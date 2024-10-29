@@ -56,13 +56,19 @@ class TestParserX86Intel(unittest.TestCase):
 
     def test_parse_instruction(self):
         instr1 = "\tsub\trsp, 296\t\t\t\t; 00000128H"
+        instr2 = "  fst ST(3)\t; Good ol' x87."
 
         parsed_1 = self.parser.parse_instruction(instr1)
+        parsed_2 = self.parser.parse_instruction(instr2)
 
         self.assertEqual(parsed_1.mnemonic, "sub")
         self.assertEqual(parsed_1.operands[0].name, "rsp")
         self.assertEqual(parsed_1.operands[1].value, 296)
         self.assertEqual(parsed_1.comment, "00000128H")
+
+        self.assertEqual(parsed_2.mnemonic, "fst")
+        self.assertEqual(parsed_2.operands[0].name, "ST(3)")
+        self.assertEqual(parsed_2.comment, "Good ol' x87.")
 
     def test_parse_line(self):
         line_comment = "; -- Begin  main"
