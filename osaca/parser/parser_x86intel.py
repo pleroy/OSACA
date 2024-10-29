@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from atexit import register
 import pyparsing as pp
 
 from osaca.parser import BaseParser
@@ -66,6 +67,38 @@ class ParserX86Intel(BaseParser):
             pp.Word(pp.alphas, pp.alphanums).setResultsName("name")
         ).setResultsName(self.register_id)
 
+        # Register addressing.
+        base_register = self.register
+        index_register = self.register
+        scale = pp.Word("1248", exact=1)
+        displacement = pp.Group(integer_number | identifier)
+        register_expression = pp.Group(
+            pp.Literal("[") +
+            pp.Optional(base_register.setResultsName("base")) +
+            pp.Optional(
+                index_register.setResultsName("index") +
+                pp.Optional(pp.Literal("*") + scale.setResultsName("scale"))
+            ) +
+            pp.Optional(pp.Group(displacement).setResultsName("displacement")) +
+            pp.Literal("]")
+        )
+
+        # Types.
+        ptr_type = pp.Group(
+            (
+                pp.Literal("BIT") ^
+                pp.Literal("BYTE") ^
+                pp.Literal("WORD") ^
+                pp.Literal("DWORD") ^
+                pp.Literal("PWORD") ^
+                pp.Literal("QWORD") ^
+                pp.Literal("TBYTE") ^
+                pp.Literal("NEAR") ^
+                pp.Literal("FAR")
+            ) +
+            pp.Literal("PTR")
+        )
+
         # Immediate.
         # TODO: Support complex expressions?
         immediate = pp.Group(
@@ -77,10 +110,10 @@ class ParserX86Intel(BaseParser):
             pp.alphas, pp.alphanums
         ).setResultsName("mnemonic")
         operand_first = pp.Group(
-            self.register ^ immediate ^ identifier
+            self.register ^ immediate ^ pp.Group(ptr_type + register_expression) ^ identifier
         )
         operand_rest = pp.Group(
-            self.register ^ immediate ^ identifier
+            self.register ^ immediate ^ pp.Group(ptr_type + register_expression) ^ identifier
         )
         self.instruction_parser = (
             mnemonic

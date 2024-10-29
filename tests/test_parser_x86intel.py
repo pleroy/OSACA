@@ -59,9 +59,15 @@ class TestParserX86Intel(unittest.TestCase):
     def test_parse_instruction(self):
         instr1 = "\tsub\trsp, 296\t\t\t\t; 00000128H"
         instr2 = "  fst ST(3)\t; Good ol' x87."
+        instr3 = "\tmulsd\txmm0, QWORD PTR [rdx+rcx*8]"
+        instr4 = "\tmov\teax, DWORD PTR cur_elements$[rbp]"
+        instr5 = "\tmov\tQWORD PTR [rsp+24], r8"
 
         parsed_1 = self.parser.parse_instruction(instr1)
         parsed_2 = self.parser.parse_instruction(instr2)
+        parsed_3 = self.parser.parse_instruction(instr3)
+        parsed_4 = self.parser.parse_instruction(instr4)
+        parsed_5 = self.parser.parse_instruction(instr5)
 
         self.assertEqual(parsed_1.mnemonic, "sub")
         self.assertEqual(parsed_1.operands[0].name, "rsp")
@@ -71,6 +77,18 @@ class TestParserX86Intel(unittest.TestCase):
         self.assertEqual(parsed_2.mnemonic, "fst")
         self.assertEqual(parsed_2.operands[0].name, "ST(3)")
         self.assertEqual(parsed_2.comment, "Good ol' x87.")
+
+        self.assertEqual(parsed_3.mnemonic, "mulsd")
+        self.assertEqual(parsed_3.operands[0].name, "xmm0")
+        self.assertEqual(parsed_3.operands[1].value, 296)
+
+        self.assertEqual(parsed_4.mnemonic, "mov")
+        self.assertEqual(parsed_4.operands[0].name, "eax")
+        self.assertEqual(parsed_4.operands[1].value, 296)
+
+        self.assertEqual(parsed_5.mnemonic, "mov")
+        self.assertEqual(parsed_5.operands[0].name, "rsp")
+        self.assertEqual(parsed_5.operands[1].name, "r8")
 
     def test_parse_line(self):
         line_comment = "; -- Begin  main"
@@ -102,6 +120,23 @@ class TestParserX86Intel(unittest.TestCase):
 
         self.assertEqual(parsed_1, instruction_form_1)
         self.assertEqual(parsed_2, instruction_form_2)
+
+    def test_parse_register(self):
+        register_str_1 = "rax"
+        register_str_2 = "r9"
+        register_str_3 = "xmm1"
+        register_str_4 = "ST(4)"
+
+        parsed_reg_1 = RegisterOperand(name="rax")
+        parsed_reg_2 = RegisterOperand(name="r9")
+        parsed_reg_3 = RegisterOperand(name="xmm1")
+        parsed_reg_4 = RegisterOperand(name="ST(4)")
+
+        self.assertEqual(self.parser.parse_register(register_str_1), parsed_reg_1)
+        self.assertEqual(self.parser.parse_register(register_str_2), parsed_reg_2)
+        self.assertEqual(self.parser.parse_register(register_str_3), parsed_reg_3)
+        self.assertEqual(self.parser.parse_register(register_str_4), parsed_reg_4)
+        self.assertIsNone(self.parser.parse_register("foo"))
 
     def test_normalize_imd(self):
         imd_binary = ImmediateOperand(value="1001111B")
