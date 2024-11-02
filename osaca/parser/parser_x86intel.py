@@ -25,18 +25,18 @@ class ParserX86Intel(BaseParser):
 
     def construct_parser(self):
         """Create parser for x86 Intel ISA."""
-        # Numeric literal.
+        # Numeric Literal.
         binary_number = pp.Combine(
-            pp.Word("01") + pp.Literal("B")
+            pp.Word("01") + pp.CaselessLiteral("B")
         )
         octal_number = pp.Combine(
-            pp.Word("01234567") + pp.Literal("O")
+            pp.Word("01234567") + pp.CaselessLiteral("O")
         )
         decimal_number = pp.Combine(
             pp.Optional(pp.Literal("-")) + pp.Word(pp.nums)
         )
         hex_number = pp.Combine(
-            pp.Word(pp.hexnums) + pp.Literal("H")
+            pp.Word(pp.hexnums) + pp.CaselessLiteral("H")
         )
         float_number = pp.Combine(
             pp.Optional(pp.Literal("-")) + pp.Word(pp.nums) + pp.Word(".", pp.nums)
@@ -62,7 +62,7 @@ class ParserX86Intel(BaseParser):
         # Register.
         self.register = pp.Group(
             pp.Combine(
-                pp.Literal("ST(") + pp.Word("01234567") + pp.Literal(")")
+                pp.CaselessLiteral("ST(") + pp.Word("01234567") + pp.Literal(")")
             ).setResultsName("name") |
             pp.Word(pp.alphas, pp.alphanums).setResultsName("name")
         ).setResultsName(self.register_id)
@@ -96,17 +96,17 @@ class ParserX86Intel(BaseParser):
         # Types.
         ptr_type = pp.Group(
             (
-                pp.Literal("BIT")
-                ^ pp.Literal("BYTE")
-                ^ pp.Literal("WORD")
-                ^ pp.Literal("DWORD")
-                ^ pp.Literal("PWORD")
-                ^ pp.Literal("QWORD")
-                ^ pp.Literal("TBYTE")
-                ^ pp.Literal("NEAR")
-                ^ pp.Literal("FAR")
+                pp.CaselessLiteral("BIT")
+                ^ pp.CaselessLiteral("BYTE")
+                ^ pp.CaselessLiteral("WORD")
+                ^ pp.CaselessLiteral("DWORD")
+                ^ pp.CaselessLiteral("PWORD")
+                ^ pp.CaselessLiteral("QWORD")
+                ^ pp.CaselessLiteral("TBYTE")
+                ^ pp.CaselessLiteral("NEAR")
+                ^ pp.CaselessLiteral("FAR")
             )
-            + pp.Literal("PTR")
+            + pp.CaselessLiteral("PTR")
         ).setResultsName("ptr_type")
 
         # Memory reference.
