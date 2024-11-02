@@ -8,6 +8,7 @@ from osaca.parser.instruction_form import InstructionForm
 from osaca.parser.identifier import IdentifierOperand
 from osaca.parser.immediate import ImmediateOperand
 from osaca.parser.label import LabelOperand
+from osaca.parser.memory import MemoryOperand
 from osaca.parser.register import RegisterOperand
 
 class ParserX86Intel(BaseParser):
@@ -71,11 +72,11 @@ class ParserX86Intel(BaseParser):
         base_register = self.register
         index_register = self.register
         scale = pp.Word("1248", exact=1)
-        displacement = pp.Group(integer_number | identifier)
+        displacement = pp.Group(integer_number | identifier).setResultsName(self.immediate_id)
         register_expression = pp.Group(
-            # The assembly produced by MSVC appears to have the displacement
-            # first, just like in the AT&T syntax, even though the Intel syntax
-            # wants it within the bracket.  Before allow both.
+            # The assembly produced by MSVC appears to have the displacement first, just like in the
+            # AT&T syntax, even though the Intel syntax wants it within the brackets.  Better allow
+            # both.  Note that "displacement" is the Intel terminology, AT&T uses "offset".
             pp.Optional(
                 pp.Group(displacement).setResultsName("displacement1")
             ) +
@@ -109,6 +110,11 @@ class ParserX86Intel(BaseParser):
             pp.Literal("PTR")
         ).setResultsName("ptr_type")
 
+        # Memory reference.
+        memory = pp.Group(
+            ptr_type + register_expression
+        ).setResultsName(self.memory_id)
+
         # Immediate.
         # TODO: Support complex expressions?
         immediate = pp.Group(
@@ -120,10 +126,10 @@ class ParserX86Intel(BaseParser):
             pp.alphas, pp.alphanums
         ).setResultsName("mnemonic")
         operand_first = pp.Group(
-            (ptr_type + register_expression) ^ self.register ^ immediate ^ identifier
+            memory ^ self.register ^ immediate ^ identifier
         )
         operand_rest = pp.Group(
-            (ptr_type + register_expression) ^ self.register ^ immediate ^ identifier
+            memory ^ self.register ^ immediate ^ identifier
         )
         self.instruction_parser = (
             mnemonic
@@ -229,6 +235,15 @@ class ParserX86Intel(BaseParser):
             self.instruction_parser.parseString(instruction, parseAll=True).asDict()
         )
 
+    def parse_register(self, register_string):
+        """Parse register string"""
+        try:
+            return self.process_operand(
+                self.register.parseString(register_string, parseAll=True).asDict()
+            )
+        except pp.ParseException:
+            return None
+
     def process_operand(self, operand):
         """Post-process operand"""
         if self.identifier in operand:
@@ -239,12 +254,40 @@ class ParserX86Intel(BaseParser):
             return self.process_label(operand[self.label_id])
         if self.register_id in operand:
             return self.process_register(operand[self.register_id])
+        if self.memory_id in operand:
+            return self.process_memory_address(operand[self.memory_id])
         return operand
 
     def process_register(self, operand):
         return RegisterOperand(
             name=operand["name"],
         )
+
+    def process_memory_address(self, memory_address):
+        """Post-process memory address operand"""
+        ptr_type = memory_address["ptr_type"]
+        register_expression = memory_address["register_expression"]
+        displacement = register_expression.get(
+            "displacement1",
+            register_expression.get("displacement2", None)
+        )
+        base = register_expression.get("base", None)
+        index = register_expression.get("index", None)
+        scale = 1 if "scale" not in register_expression else int(register_expression["scale"], 0)
+        displacementOp = None
+        baseOp = None
+        indexOp = None
+        if displacement:
+            displacementOp = self.process_immediate(displacement["immediate"])
+        if base:
+            baseOp = RegisterOperand(name=base["name"])
+        if index:
+            indexOp = RegisterOperand(name=index["name"])
+        new_dict = MemoryOperand(offset=displacementOp, base=baseOp, index=indexOp, scale=scale)
+        # Add segmentation extension if existing
+        if self.segment_ext in memory_address:
+            new_dict.segment_ext = memory_address[self.segment_ext]
+        return new_dict
 
     def process_label(self, label):
         """Post-process label asm line"""

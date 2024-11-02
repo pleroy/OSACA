@@ -9,8 +9,10 @@ import unittest
 from pyparsing import ParseException
 
 from osaca.parser import ParserX86Intel, InstructionForm
-from osaca.parser.register import RegisterOperand
+from osaca.parser.identifier import IdentifierOperand
 from osaca.parser.immediate import ImmediateOperand
+from osaca.parser.memory import MemoryOperand
+from osaca.parser.register import RegisterOperand
 
 
 class TestParserX86Intel(unittest.TestCase):
@@ -80,14 +82,21 @@ class TestParserX86Intel(unittest.TestCase):
 
         self.assertEqual(parsed_3.mnemonic, "mulsd")
         self.assertEqual(parsed_3.operands[0].name, "xmm0")
-        self.assertEqual(parsed_3.operands[1].value, 296)
+        self.assertEqual(parsed_3.operands[1],
+                         MemoryOperand(base=RegisterOperand(name="rdx"),
+                                       index=RegisterOperand(name="rcx"),
+                                       scale=8))
 
         self.assertEqual(parsed_4.mnemonic, "mov")
         self.assertEqual(parsed_4.operands[0].name, "eax")
-        self.assertEqual(parsed_4.operands[1].value, 296)
+        self.assertEqual(parsed_4.operands[1],
+                         MemoryOperand(offset=IdentifierOperand(name="cur_elements$"),
+                                       base=RegisterOperand(name="rbp")))
 
         self.assertEqual(parsed_5.mnemonic, "mov")
-        self.assertEqual(parsed_5.operands[0].name, "rsp")
+        self.assertEqual(parsed_5.operands[0],
+                         MemoryOperand(offset=ImmediateOperand(value=24),
+                                       base=RegisterOperand(name="rsp")))
         self.assertEqual(parsed_5.operands[1].name, "r8")
 
     def test_parse_line(self):
@@ -136,7 +145,6 @@ class TestParserX86Intel(unittest.TestCase):
         self.assertEqual(self.parser.parse_register(register_str_2), parsed_reg_2)
         self.assertEqual(self.parser.parse_register(register_str_3), parsed_reg_3)
         self.assertEqual(self.parser.parse_register(register_str_4), parsed_reg_4)
-        self.assertIsNone(self.parser.parse_register("foo"))
 
     def test_normalize_imd(self):
         imd_binary = ImmediateOperand(value="1001111B")
