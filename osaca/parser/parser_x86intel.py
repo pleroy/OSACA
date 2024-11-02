@@ -25,7 +25,7 @@ class ParserX86Intel(BaseParser):
 
     def construct_parser(self):
         """Create parser for x86 Intel ISA."""
-        # Numeric Literal.
+        # Numeric literal.
         binary_number = pp.Combine(
             pp.Word("01") + pp.CaselessLiteral("B")
         )
