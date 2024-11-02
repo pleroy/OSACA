@@ -91,7 +91,7 @@ class ParserX86Intel(BaseParser):
                 pp.Group(displacement).setResultsName("displacement2")
             ) +
             pp.Literal("]")
-        )
+        ).setResultsName("register_expression")
 
         # Types.
         ptr_type = pp.Group(
@@ -107,7 +107,7 @@ class ParserX86Intel(BaseParser):
                 pp.Literal("FAR")
             ) +
             pp.Literal("PTR")
-        )
+        ).setResultsName("ptr_type")
 
         # Immediate.
         # TODO: Support complex expressions?
@@ -120,10 +120,10 @@ class ParserX86Intel(BaseParser):
             pp.alphas, pp.alphanums
         ).setResultsName("mnemonic")
         operand_first = pp.Group(
-            pp.Group(ptr_type + register_expression) ^ self.register ^ immediate ^ identifier
+            (ptr_type + register_expression) ^ self.register ^ immediate ^ identifier
         )
         operand_rest = pp.Group(
-            pp.Group(ptr_type + register_expression) ^ self.register ^ immediate ^ identifier
+            (ptr_type + register_expression) ^ self.register ^ immediate ^ identifier
         )
         self.instruction_parser = (
             mnemonic
