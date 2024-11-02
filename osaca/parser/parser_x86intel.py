@@ -275,11 +275,11 @@ class ParserX86Intel(BaseParser):
         displacement_op = self.process_immediate(displacement.immediate) if displacement else None
         base_op = RegisterOperand(name=base.name) if base else None
         index_op = RegisterOperand(name=index.name) if index else None
-        new_dict = MemoryOperand(offset=displacement_op, base=base_op, index=index_op, scale=scale)
+        new_memory = MemoryOperand(offset=displacement_op, base=base_op, index=index_op, scale=scale)
         # Add segmentation extension if existing
         if self.segment_ext in memory_address:
-            new_dict.segment_ext = memory_address[self.segment_ext]
-        return new_dict
+            new_memory.segment_ext = memory_address[self.segment_ext]
+        return new_memory
 
     def process_label(self, label):
         """Post-process label asm line"""
