@@ -67,7 +67,7 @@ class ParserX86Intel(BaseParser):
             pp.Word(pp.alphas, pp.alphanums).setResultsName("name")
         ).setResultsName(self.register_id)
 
-        # Register addressing.
+        # Register expressions.
         base_register = self.register
         index_register = self.register
         scale = pp.Word("1248", exact=1)
