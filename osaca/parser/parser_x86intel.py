@@ -7,6 +7,7 @@ from osaca.parser.instruction_form import InstructionForm
 from osaca.parser.identifier import IdentifierOperand
 from osaca.parser.immediate import ImmediateOperand
 from osaca.parser.label import LabelOperand
+from osaca.parser.memory import MemoryOperand
 from osaca.parser.register import RegisterOperand
 
 class ParserX86Intel(BaseParser):
@@ -66,6 +67,53 @@ class ParserX86Intel(BaseParser):
             pp.Word(pp.alphas, pp.alphanums).setResultsName("name")
         ).setResultsName(self.register_id)
 
+        # Register expressions.
+        base_register = self.register
+        index_register = self.register
+        scale = pp.Word("1248", exact=1)
+        displacement = pp.Group(integer_number | identifier).setResultsName(self.immediate_id)
+        register_expression = pp.Group(
+            # The assembly produced by MSVC appears to have the displacement first, just like in the
+            # AT&T syntax, even though the Intel syntax wants it within the brackets.  Better allow
+            # both.  Note that "displacement" is the Intel terminology, AT&T uses "offset".
+            pp.Optional(
+                pp.Group(displacement).setResultsName("displacement1")
+            )
+            + pp.Literal("[")
+            + pp.Optional(base_register.setResultsName("base"))
+            + pp.Optional(
+                pp.Literal("+")
+                + index_register.setResultsName("index")
+                + pp.Optional(pp.Literal("*") + scale.setResultsName("scale"))
+            )
+            + pp.Optional(
+                pp.Literal("+")
+                + pp.Group(displacement).setResultsName("displacement2")
+            )
+            + pp.Literal("]")
+        ).setResultsName("register_expression")
+
+        # Types.
+        ptr_type = pp.Group(
+            (
+                pp.Literal("BIT")
+                ^ pp.Literal("BYTE")
+                ^ pp.Literal("WORD")
+                ^ pp.Literal("DWORD")
+                ^ pp.Literal("PWORD")
+                ^ pp.Literal("QWORD")
+                ^ pp.Literal("TBYTE")
+                ^ pp.Literal("NEAR")
+                ^ pp.Literal("FAR")
+            )
+            + pp.Literal("PTR")
+        ).setResultsName("ptr_type")
+
+        # Memory reference.
+        memory = pp.Group(
+            ptr_type + register_expression
+        ).setResultsName(self.memory_id)
+
         # Immediate.
         # TODO: Support complex expressions?
         immediate = pp.Group(
@@ -77,10 +125,10 @@ class ParserX86Intel(BaseParser):
             pp.alphas, pp.alphanums
         ).setResultsName("mnemonic")
         operand_first = pp.Group(
-            self.register ^ immediate ^ identifier
+            memory ^ self.register ^ immediate ^ identifier
         )
         operand_rest = pp.Group(
-            self.register ^ immediate ^ identifier
+            memory ^ self.register ^ immediate ^ identifier
         )
         self.instruction_parser = (
             mnemonic
@@ -115,7 +163,7 @@ class ParserX86Intel(BaseParser):
 
         # 1. Parse comment
         try:
-            result = self.process_operand(self.comment.parseString(line, parseAll=True).asDict())
+            result = self.process_operand(self.comment.parseString(line, parseAll=True))
             instruction_form.comment = " ".join(result[self.comment_id])
         except pp.ParseException:
             pass
@@ -124,7 +172,7 @@ class ParserX86Intel(BaseParser):
         if not result:
             try:
                 # returns tuple with label operand and comment, if any
-                result = self.process_operand(self.label.parseString(line, parseAll=True).asDict())
+                result = self.process_operand(self.label.parseString(line, parseAll=True))
                 instruction_form.label = result[0].name
                 if result[1] is not None:
                     instruction_form.comment = " ".join(result[1])
@@ -155,18 +203,18 @@ class ParserX86Intel(BaseParser):
         # Add operands to list
         # Check first operand
         if "operand1" in parse_result:
-            operands.append(self.process_operand(parse_result["operand1"]))
+            operands.append(self.process_operand(parse_result.operand1))
         # Check second operand
         if "operand2" in parse_result:
-            operands.append(self.process_operand(parse_result["operand2"]))
+            operands.append(self.process_operand(parse_result.operand2))
         # Check third operand
         if "operand3" in parse_result:
-            operands.append(self.process_operand(parse_result["operand3"]))
+            operands.append(self.process_operand(parse_result.operand3))
         # Check fourth operand
         if "operand4" in parse_result:
-            operands.append(self.process_operand(parse_result["operand4"]))
+            operands.append(self.process_operand(parse_result.operand4))
         return_dict = InstructionForm(
-            mnemonic=parse_result["mnemonic"],
+            mnemonic=parse_result.mnemonic,
             operands=operands,
             label_id=None,
             comment_id=" ".join(parse_result[self.comment_id])
@@ -183,8 +231,17 @@ class ParserX86Intel(BaseParser):
         :returns: `dict` -- parsed instruction form
         """
         return self.make_instruction(
-            self.instruction_parser.parseString(instruction, parseAll=True).asDict()
+            self.instruction_parser.parseString(instruction, parseAll=True)
         )
+
+    def parse_register(self, register_string):
+        """Parse register string"""
+        try:
+            return self.process_operand(
+                self.register.parseString(register_string, parseAll=True)
+            )
+        except pp.ParseException:
+            return None
 
     def process_operand(self, operand):
         """Post-process operand"""
@@ -194,33 +251,54 @@ class ParserX86Intel(BaseParser):
             return self.process_immediate(operand[self.immediate_id])
         if self.label_id in operand:
             return self.process_label(operand[self.label_id])
+        if self.memory_id in operand:
+            return self.process_memory_address(operand[self.memory_id])
         if self.register_id in operand:
             return self.process_register(operand[self.register_id])
         return operand
 
     def process_register(self, operand):
-        return RegisterOperand(
-            name=operand["name"],
+        return RegisterOperand(name=operand.name)
+
+    def process_memory_address(self, memory_address):
+        """Post-process memory address operand"""
+        # TODO: Use the ptr type.
+        ptr_type = memory_address.ptr_type
+        register_expression = memory_address.register_expression
+        displacement = register_expression.get(
+            "displacement1",
+            register_expression.get("displacement2")
         )
+        base = register_expression.get("base")
+        index = register_expression.get("index")
+        scale = int(register_expression.get("scale", "1"), 0)
+        displacement_op = self.process_immediate(displacement.immediate) if displacement else None
+        base_op = RegisterOperand(name=base.name) if base else None
+        index_op = RegisterOperand(name=index.name) if index else None
+        new_memory = MemoryOperand(offset=displacement_op, base=base_op, index=index_op, scale=scale)
+        # Add segmentation extension if existing
+        if self.segment_ext in memory_address:
+            new_memory.segment_ext = memory_address[self.segment_ext]
+        return new_memory
 
     def process_label(self, label):
         """Post-process label asm line"""
         # Remove duplicated 'name' level due to identifier.
         label["name"] = label["name"]["name"]
-        return (LabelOperand(name=label["name"]),
+        return (LabelOperand(name=label.name),
                 self.make_instruction(label) if "mnemonic" in label else None)
 
     def process_immediate(self, immediate):
         """Post-process immediate operand"""
         if "identifier" in immediate:
             # actually an identifier, change declaration
-            return self.process_identifier(immediate["identifier"])
-        new_immediate = ImmediateOperand(value=immediate["value"])
+            return self.process_identifier(immediate.identifier)
+        new_immediate = ImmediateOperand(value=immediate.value)
         new_immediate.value = self.normalize_imd(new_immediate)
         return new_immediate
 
     def process_identifier(self, identifier):
-        return IdentifierOperand(name=identifier["name"])
+        return IdentifierOperand(name=identifier.name)
 
     def normalize_imd(self, imd):
         """Normalize immediate to decimal based representation"""
