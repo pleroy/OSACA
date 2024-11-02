@@ -78,35 +78,35 @@ class ParserX86Intel(BaseParser):
             # both.  Note that "displacement" is the Intel terminology, AT&T uses "offset".
             pp.Optional(
                 pp.Group(displacement).setResultsName("displacement1")
-            ) +
-            pp.Literal("[") +
-            pp.Optional(base_register.setResultsName("base")) +
-            pp.Optional(
-                pp.Literal("+") +
-                index_register.setResultsName("index") +
-                pp.Optional(pp.Literal("*") + scale.setResultsName("scale"))
-            ) +
-            pp.Optional(
-                pp.Literal("+") +
-                pp.Group(displacement).setResultsName("displacement2")
-            ) +
-            pp.Literal("]")
+            )
+            + pp.Literal("[")
+            + pp.Optional(base_register.setResultsName("base"))
+            + pp.Optional(
+                pp.Literal("+")
+                + index_register.setResultsName("index")
+                + pp.Optional(pp.Literal("*") + scale.setResultsName("scale"))
+            )
+            + pp.Optional(
+                pp.Literal("+")
+                + pp.Group(displacement).setResultsName("displacement2")
+            )
+            + pp.Literal("]")
         ).setResultsName("register_expression")
 
         # Types.
         ptr_type = pp.Group(
             (
-                pp.Literal("BIT") ^
-                pp.Literal("BYTE") ^
-                pp.Literal("WORD") ^
-                pp.Literal("DWORD") ^
-                pp.Literal("PWORD") ^
-                pp.Literal("QWORD") ^
-                pp.Literal("TBYTE") ^
-                pp.Literal("NEAR") ^
-                pp.Literal("FAR")
-            ) +
-            pp.Literal("PTR")
+                pp.Literal("BIT")
+                ^ pp.Literal("BYTE")
+                ^ pp.Literal("WORD")
+                ^ pp.Literal("DWORD")
+                ^ pp.Literal("PWORD")
+                ^ pp.Literal("QWORD")
+                ^ pp.Literal("TBYTE")
+                ^ pp.Literal("NEAR")
+                ^ pp.Literal("FAR")
+            )
+            + pp.Literal("PTR")
         ).setResultsName("ptr_type")
 
         # Memory reference.
