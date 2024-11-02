@@ -72,23 +72,28 @@ class TestParserX86Intel(unittest.TestCase):
         parsed_5 = self.parser.parse_instruction(instr5)
 
         self.assertEqual(parsed_1.mnemonic, "sub")
-        self.assertEqual(parsed_1.operands[0].name, "rsp")
-        self.assertEqual(parsed_1.operands[1].value, 296)
+        self.assertEqual(parsed_1.operands[0],
+                         RegisterOperand(name="rsp"))
+        self.assertEqual(parsed_1.operands[1],
+                         ImmediateOperand(value=296))
         self.assertEqual(parsed_1.comment, "00000128H")
 
         self.assertEqual(parsed_2.mnemonic, "fst")
-        self.assertEqual(parsed_2.operands[0].name, "ST(3)")
+        self.assertEqual(parsed_2.operands[0],
+                         RegisterOperand(name="ST(3)"))
         self.assertEqual(parsed_2.comment, "Good ol' x87.")
 
         self.assertEqual(parsed_3.mnemonic, "mulsd")
-        self.assertEqual(parsed_3.operands[0].name, "xmm0")
+        self.assertEqual(parsed_3.operands[0],
+                         RegisterOperand(name="xmm0"))
         self.assertEqual(parsed_3.operands[1],
                          MemoryOperand(base=RegisterOperand(name="rdx"),
                                        index=RegisterOperand(name="rcx"),
                                        scale=8))
 
         self.assertEqual(parsed_4.mnemonic, "mov")
-        self.assertEqual(parsed_4.operands[0].name, "eax")
+        self.assertEqual(parsed_4.operands[0],
+                         RegisterOperand(name="eax"))
         self.assertEqual(parsed_4.operands[1],
                          MemoryOperand(offset=IdentifierOperand(name="cur_elements$"),
                                        base=RegisterOperand(name="rbp")))
@@ -97,7 +102,8 @@ class TestParserX86Intel(unittest.TestCase):
         self.assertEqual(parsed_5.operands[0],
                          MemoryOperand(offset=ImmediateOperand(value=24),
                                        base=RegisterOperand(name="rsp")))
-        self.assertEqual(parsed_5.operands[1].name, "r8")
+        self.assertEqual(parsed_5.operands[1],
+                         RegisterOperand(name="r8"))
 
     def test_parse_line(self):
         line_comment = "; -- Begin  main"

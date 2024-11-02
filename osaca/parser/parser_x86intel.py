@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-from atexit import register
 import pyparsing as pp
 
 from osaca.parser import BaseParser
@@ -252,10 +251,10 @@ class ParserX86Intel(BaseParser):
             return self.process_immediate(operand[self.immediate_id])
         if self.label_id in operand:
             return self.process_label(operand[self.label_id])
-        if self.register_id in operand:
-            return self.process_register(operand[self.register_id])
         if self.memory_id in operand:
             return self.process_memory_address(operand[self.memory_id])
+        if self.register_id in operand:
+            return self.process_register(operand[self.register_id])
         return operand
 
     def process_register(self, operand):
@@ -265,6 +264,7 @@ class ParserX86Intel(BaseParser):
 
     def process_memory_address(self, memory_address):
         """Post-process memory address operand"""
+        # TODO: Use the ptr type.
         ptr_type = memory_address["ptr_type"]
         register_expression = memory_address["register_expression"]
         displacement = register_expression.get(
