@@ -114,10 +114,10 @@ class ParserX86Intel(BaseParser):
             pp.alphas, pp.alphanums
         ).setResultsName("mnemonic")
         operand_first = pp.Group(
-            self.register ^ immediate ^ pp.Group(ptr_type + register_expression) ^ identifier
+            pp.Group(self.ptr_type + self.register_expression) ^ self.register ^ immediate ^ identifier
         )
         operand_rest = pp.Group(
-            self.register ^ immediate ^ pp.Group(ptr_type + register_expression) ^ identifier
+            pp.Group(self.ptr_type + self.register_expression) ^ self.register ^ immediate ^ identifier
         )
         self.instruction_parser = (
             mnemonic
