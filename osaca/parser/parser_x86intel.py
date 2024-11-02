@@ -163,7 +163,7 @@ class ParserX86Intel(BaseParser):
 
         # 1. Parse comment
         try:
-            result = self.process_operand(self.comment.parseString(line, parseAll=True).asDict())
+            result = self.process_operand(self.comment.parseString(line, parseAll=True))
             instruction_form.comment = " ".join(result[self.comment_id])
         except pp.ParseException:
             pass
@@ -172,7 +172,7 @@ class ParserX86Intel(BaseParser):
         if not result:
             try:
                 # returns tuple with label operand and comment, if any
-                result = self.process_operand(self.label.parseString(line, parseAll=True).asDict())
+                result = self.process_operand(self.label.parseString(line, parseAll=True))
                 instruction_form.label = result[0].name
                 if result[1] is not None:
                     instruction_form.comment = " ".join(result[1])
@@ -203,18 +203,18 @@ class ParserX86Intel(BaseParser):
         # Add operands to list
         # Check first operand
         if "operand1" in parse_result:
-            operands.append(self.process_operand(parse_result["operand1"]))
+            operands.append(self.process_operand(parse_result.operand1))
         # Check second operand
         if "operand2" in parse_result:
-            operands.append(self.process_operand(parse_result["operand2"]))
+            operands.append(self.process_operand(parse_result.operand2))
         # Check third operand
         if "operand3" in parse_result:
-            operands.append(self.process_operand(parse_result["operand3"]))
+            operands.append(self.process_operand(parse_result.operand3))
         # Check fourth operand
         if "operand4" in parse_result:
-            operands.append(self.process_operand(parse_result["operand4"]))
+            operands.append(self.process_operand(parse_result.operand4))
         return_dict = InstructionForm(
-            mnemonic=parse_result["mnemonic"],
+            mnemonic=parse_result.mnemonic,
             operands=operands,
             label_id=None,
             comment_id=" ".join(parse_result[self.comment_id])
@@ -231,14 +231,14 @@ class ParserX86Intel(BaseParser):
         :returns: `dict` -- parsed instruction form
         """
         return self.make_instruction(
-            self.instruction_parser.parseString(instruction, parseAll=True).asDict()
+            self.instruction_parser.parseString(instruction, parseAll=True)
         )
 
     def parse_register(self, register_string):
         """Parse register string"""
         try:
             return self.process_operand(
-                self.register.parseString(register_string, parseAll=True).asDict()
+                self.register.parseString(register_string, parseAll=True)
             )
         except pp.ParseException:
             return None
@@ -258,9 +258,7 @@ class ParserX86Intel(BaseParser):
         return operand
 
     def process_register(self, operand):
-        return RegisterOperand(
-            name=operand["name"],
-        )
+        return RegisterOperand(name=operand.name)
 
     def process_memory_address(self, memory_address):
         """Post-process memory address operand"""

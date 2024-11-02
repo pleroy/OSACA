@@ -178,13 +178,13 @@ class TestParserX86Intel(unittest.TestCase):
     ##################
     def _get_comment(self, parser, comment):
         return " ".join(
-            parser.process_operand(parser.comment.parseString(comment, parseAll=True).asDict())[
+            parser.process_operand(parser.comment.parseString(comment, parseAll=True))[
                 "comment"
             ]
         )
 
     def _get_label(self, parser, label):
-        return parser.process_operand(parser.label.parseString(label, parseAll=True).asDict())
+        return parser.process_operand(parser.label.parseString(label, parseAll=True))
 
     @staticmethod
     def _find_file(name):
