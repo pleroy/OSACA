@@ -265,25 +265,19 @@ class ParserX86Intel(BaseParser):
     def process_memory_address(self, memory_address):
         """Post-process memory address operand"""
         # TODO: Use the ptr type.
-        ptr_type = memory_address["ptr_type"]
-        register_expression = memory_address["register_expression"]
+        ptr_type = memory_address.ptr_type
+        register_expression = memory_address.register_expression
         displacement = register_expression.get(
             "displacement1",
-            register_expression.get("displacement2", None)
+            register_expression.get("displacement2")
         )
-        base = register_expression.get("base", None)
-        index = register_expression.get("index", None)
-        scale = 1 if "scale" not in register_expression else int(register_expression["scale"], 0)
-        displacementOp = None
-        baseOp = None
-        indexOp = None
-        if displacement:
-            displacementOp = self.process_immediate(displacement["immediate"])
-        if base:
-            baseOp = RegisterOperand(name=base["name"])
-        if index:
-            indexOp = RegisterOperand(name=index["name"])
-        new_dict = MemoryOperand(offset=displacementOp, base=baseOp, index=indexOp, scale=scale)
+        base = register_expression.get("base")
+        index = register_expression.get("index")
+        scale = int(register_expression.get("scale", "1"), 0)
+        displacement_op = self.process_immediate(displacement.immediate) if displacement else None
+        base_op = RegisterOperand(name=base.name) if base else None
+        index_op = RegisterOperand(name=index.name) if index else None
+        new_dict = MemoryOperand(offset=displacement_op, base=base_op, index=index_op, scale=scale)
         # Add segmentation extension if existing
         if self.segment_ext in memory_address:
             new_dict.segment_ext = memory_address[self.segment_ext]
@@ -293,20 +287,20 @@ class ParserX86Intel(BaseParser):
         """Post-process label asm line"""
         # Remove duplicated 'name' level due to identifier.
         label["name"] = label["name"]["name"]
-        return (LabelOperand(name=label["name"]),
+        return (LabelOperand(name=label.name),
                 self.make_instruction(label) if "mnemonic" in label else None)
 
     def process_immediate(self, immediate):
         """Post-process immediate operand"""
         if "identifier" in immediate:
             # actually an identifier, change declaration
-            return self.process_identifier(immediate["identifier"])
-        new_immediate = ImmediateOperand(value=immediate["value"])
+            return self.process_identifier(immediate.identifier)
+        new_immediate = ImmediateOperand(value=immediate.value)
         new_immediate.value = self.normalize_imd(new_immediate)
         return new_immediate
 
     def process_identifier(self, identifier):
-        return IdentifierOperand(name=identifier["name"])
+        return IdentifierOperand(name=identifier.name)
 
     def normalize_imd(self, imd):
         """Normalize immediate to decimal based representation"""
