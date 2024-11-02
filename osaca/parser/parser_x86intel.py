@@ -72,19 +72,23 @@ class ParserX86Intel(BaseParser):
         index_register = self.register
         scale = pp.Word("1248", exact=1)
         displacement = pp.Group(integer_number | identifier)
-        register_expression = pp.Group(
+        self.register_expression = pp.Group(
             pp.Literal("[") +
             pp.Optional(base_register.setResultsName("base")) +
             pp.Optional(
+                pp.Literal("+") +
                 index_register.setResultsName("index") +
                 pp.Optional(pp.Literal("*") + scale.setResultsName("scale"))
             ) +
-            pp.Optional(pp.Group(displacement).setResultsName("displacement")) +
+            pp.Optional(
+                pp.Literal("+") +
+                pp.Group(displacement).setResultsName("displacement")
+            ) +
             pp.Literal("]")
         )
 
         # Types.
-        ptr_type = pp.Group(
+        self.ptr_type = pp.Group(
             (
                 pp.Literal("BIT") ^
                 pp.Literal("BYTE") ^
