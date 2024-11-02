@@ -72,7 +72,13 @@ class ParserX86Intel(BaseParser):
         index_register = self.register
         scale = pp.Word("1248", exact=1)
         displacement = pp.Group(integer_number | identifier)
-        self.register_expression = pp.Group(
+        register_expression = pp.Group(
+            # The assembly produced by MSVC appears to have the displacement
+            # first, just like in the AT&T syntax, even though the Intel syntax
+            # wants it within the bracket.  Before allow both.
+            pp.Optional(
+                pp.Group(displacement).setResultsName("displacement1")
+            ) +
             pp.Literal("[") +
             pp.Optional(base_register.setResultsName("base")) +
             pp.Optional(
@@ -82,13 +88,13 @@ class ParserX86Intel(BaseParser):
             ) +
             pp.Optional(
                 pp.Literal("+") +
-                pp.Group(displacement).setResultsName("displacement")
+                pp.Group(displacement).setResultsName("displacement2")
             ) +
             pp.Literal("]")
         )
 
         # Types.
-        self.ptr_type = pp.Group(
+        ptr_type = pp.Group(
             (
                 pp.Literal("BIT") ^
                 pp.Literal("BYTE") ^
@@ -114,10 +120,10 @@ class ParserX86Intel(BaseParser):
             pp.alphas, pp.alphanums
         ).setResultsName("mnemonic")
         operand_first = pp.Group(
-            pp.Group(self.ptr_type + self.register_expression) ^ self.register ^ immediate ^ identifier
+            pp.Group(ptr_type + register_expression) ^ self.register ^ immediate ^ identifier
         )
         operand_rest = pp.Group(
-            pp.Group(self.ptr_type + self.register_expression) ^ self.register ^ immediate ^ identifier
+            pp.Group(ptr_type + register_expression) ^ self.register ^ immediate ^ identifier
         )
         self.instruction_parser = (
             mnemonic
