@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-from time import process_time
 import pyparsing as pp
 
 from osaca.parser import BaseParser
@@ -221,7 +220,7 @@ class ParserX86Intel(BaseParser):
 
         # Expressions.
         # The ASM86 manual has weird expressions on page 130 (displacement outside of the register
-        # expression, multiple expressions).  Let's ignore those for now, but see
+        # expression, multiple register expressions).  Let's ignore those for now, but see
         # https://stackoverflow.com/questions/71540754/why-sometimes-use-offset-flatlabel-and-sometimes-not.
         address_expression = pp.Group(
             immediate + register_expression
