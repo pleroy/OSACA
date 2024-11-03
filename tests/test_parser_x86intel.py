@@ -9,6 +9,7 @@ import unittest
 from pyparsing import ParseException
 
 from osaca.parser import ParserX86Intel, InstructionForm
+from osaca.parser.directive import DirectiveOperand
 from osaca.parser.identifier import IdentifierOperand
 from osaca.parser.immediate import ImmediateOperand
 from osaca.parser.label import LabelOperand
@@ -58,12 +59,24 @@ class TestParserX86Intel(unittest.TestCase):
         )
 
     def test_directive_parser(self):
-        #self.assertEqual(self._get_directive(self.parser, "\t.allocstack 16")[0].name, "text")
-        self.assertEqual(self._get_directive(self.parser, "INCLUDELIB MSVCRTD")[0].name, "text")
-        self.assertEqual(self._get_directive(self.parser, "msvcjmc\tSEGMENT")[0].name, "text")
-        self.assertEqual(self._get_directive(self.parser, "EXTRN	_RTC_InitBase:PROC")[0].name, "text")
-        self.assertEqual(self._get_directive(self.parser, "$pdata$kernel DD imagerel $LN9")[0].name, "text")
-        self.assertEqual(self._get_directive(self.parser, "repeat$ = 320")[0].name, "text")
+        self.assertEqual(self._get_directive(self.parser, "\t.allocstack 16")[0],
+                         DirectiveOperand(name=".allocstack",
+                                          parameters=["16"]))
+        self.assertEqual(self._get_directive(self.parser, "INCLUDELIB MSVCRTD")[0],
+                         DirectiveOperand(name="INCLUDELIB",
+                                          parameters=["MSVCRTD"]))
+        self.assertEqual(self._get_directive(self.parser, "msvcjmc\tSEGMENT")[0],
+                         DirectiveOperand(name="SEGMENT",
+                                          parameters=["msvcjmc"]))
+        self.assertEqual(self._get_directive(self.parser, "EXTRN\t_RTC_InitBase:PROC")[0],
+                         DirectiveOperand(name="EXTRN",
+                                          parameters=["_RTC_InitBase:PROC"]))
+        self.assertEqual(self._get_directive(self.parser, "$pdata$kernel DD imagerel $LN9")[0],
+                         DirectiveOperand(name="DD",
+                                          parameters=["$pdata$kernel", "imagerel", "$LN9"]))
+        self.assertEqual(self._get_directive(self.parser, "repeat$ = 320")[0],
+                         DirectiveOperand(name="=",
+                                          parameters=["repeat$", "320"]))
 
     def test_parse_instruction(self):
         instr1 = "\tsub\trsp, 296\t\t\t\t; 00000128H"
