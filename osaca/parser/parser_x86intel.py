@@ -299,7 +299,7 @@ class ParserX86Intel(BaseParser):
             pp.CaselessKeyword("ALIAS")
             | pp.CaselessKeyword("ALIGN")
             | pp.CaselessKeyword("ASSUME")
-            | pp.CaselessKeyword("BYTE")
+            #| pp.CaselessKeyword("BYTE")
             | pp.CaselessKeyword("CATSTR")
             | pp.CaselessKeyword("COMM")
             | pp.CaselessKeyword("COMMENT")
