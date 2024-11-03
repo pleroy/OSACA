@@ -10,6 +10,9 @@ from osaca.parser.label import LabelOperand
 from osaca.parser.memory import MemoryOperand
 from osaca.parser.register import RegisterOperand
 
+# References:
+#   ASM386 Assembly Language Reference, document number 469165-003, https://mirror.math.princeton.edu/pub/oldlinux/Linux.old/Ref-docs/asm-ref.pdf
+#   Microsoft Macro Assembler BNF Grammar, https://learn.microsoft.com/en-us/cpp/assembler/masm/masm-bnf-grammar?view=msvc-170.
 class ParserX86Intel(BaseParser):
     _instance = None
 
@@ -50,9 +53,29 @@ class ParserX86Intel(BaseParser):
             pp.ZeroOrMore(pp.Word(pp.printables))
         ).setResultsName(self.comment_id)
 
+        # Types.
+        data_type = (
+            pp.CaselessKeyword("BYTE")
+            | pp.CaselessKeyword("SBYTE")
+            | pp.CaselessKeyword("WORD")
+            | pp.CaselessKeyword("SWORD")
+            | pp.CaselessKeyword("DWORD")
+            | pp.CaselessKeyword("SDWORD")
+            | pp.CaselessKeyword("FWORD")
+            | pp.CaselessKeyword("QWORD")
+            | pp.CaselessKeyword("SQWORD")
+            | pp.CaselessKeyword("TBYTE")
+            | pp.CaselessKeyword("OWORD")
+            | pp.CaselessKeyword("REAL4")
+            | pp.CaselessKeyword("REAL8")
+            | pp.CaselessKeyword("REAL10")
+            | pp.CaselessKeyword("MMWORD")
+            | pp.CaselessKeyword("XMMWORD")
+            | pp.CaselessKeyword("YMMWORD")
+        ).setResultsName("data_type")
+
         # Identifier.  Note that $ is not mentioned in the ASM386 Assembly Language Reference,
-        # but it is mentioned in the MASM syntax:
-        # https://learn.microsoft.com/en-us/cpp/assembler/masm/masm-bnf-grammar?view=msvc-170.
+        # but it is mentioned in the MASM syntax
         first = pp.Word(pp.alphas + "$?@_", exact=1)
         rest = pp.Word(pp.alphanums + "$?@_")
         identifier = pp.Group(
@@ -63,110 +86,111 @@ class ParserX86Intel(BaseParser):
         # This follows the MASM grammar.
         special_register = (
             pp.CaselessKeyword("CR0")
-            ^ pp.CaselessKeyword("CR2")
-            ^ pp.CaselessKeyword("CR3")
-            ^ pp.CaselessKeyword("DR0")
-            ^ pp.CaselessKeyword("DR1")
-            ^ pp.CaselessKeyword("DR2")
-            ^ pp.CaselessKeyword("DR3")
-            ^ pp.CaselessKeyword("DR6")
-            ^ pp.CaselessKeyword("DR7")
-            ^ pp.CaselessKeyword("TR3")
-            ^ pp.CaselessKeyword("TR4")
-            ^ pp.CaselessKeyword("TR5")
-            ^ pp.CaselessKeyword("TR6")
-            ^ pp.CaselessKeyword("TR7")
+            | pp.CaselessKeyword("CR2")
+            | pp.CaselessKeyword("CR3")
+            | pp.CaselessKeyword("DR0")
+            | pp.CaselessKeyword("DR1")
+            | pp.CaselessKeyword("DR2")
+            | pp.CaselessKeyword("DR3")
+            | pp.CaselessKeyword("DR6")
+            | pp.CaselessKeyword("DR7")
+            | pp.CaselessKeyword("TR3")
+            | pp.CaselessKeyword("TR4")
+            | pp.CaselessKeyword("TR5")
+            | pp.CaselessKeyword("TR6")
+            | pp.CaselessKeyword("TR7")
         ).setResultsName("name")
         gp_register = (
             pp.CaselessKeyword("AX")
-            ^ pp.CaselessKeyword("EAX")
-            ^ pp.CaselessKeyword("CX")
-            ^ pp.CaselessKeyword("ECX")
-            ^ pp.CaselessKeyword("DX")
-            ^ pp.CaselessKeyword("EDX")
-            ^ pp.CaselessKeyword("BX")
-            ^ pp.CaselessKeyword("EBX")
-            ^ pp.CaselessKeyword("DI")
-            ^ pp.CaselessKeyword("EDI")
-            ^ pp.CaselessKeyword("SI")
-            ^ pp.CaselessKeyword("ESI")
-            ^ pp.CaselessKeyword("BP")
-            ^ pp.CaselessKeyword("EBP")
-            ^ pp.CaselessKeyword("SP")
-            ^ pp.CaselessKeyword("ESP")
-            ^ pp.CaselessKeyword("R8W")
-            ^ pp.CaselessKeyword("R8D")
-            ^ pp.CaselessKeyword("R9W")
-            ^ pp.CaselessKeyword("R9D")
-            ^ pp.CaselessKeyword("R12D")
-            ^ pp.CaselessKeyword("R13W")
-            ^ pp.CaselessKeyword("R13D")
-            ^ pp.CaselessKeyword("R14W")
-            ^ pp.CaselessKeyword("R14D")
+            | pp.CaselessKeyword("EAX")
+            | pp.CaselessKeyword("CX")
+            | pp.CaselessKeyword("ECX")
+            | pp.CaselessKeyword("DX")
+            | pp.CaselessKeyword("EDX")
+            | pp.CaselessKeyword("BX")
+            | pp.CaselessKeyword("EBX")
+            | pp.CaselessKeyword("DI")
+            | pp.CaselessKeyword("EDI")
+            | pp.CaselessKeyword("SI")
+            | pp.CaselessKeyword("ESI")
+            | pp.CaselessKeyword("BP")
+            | pp.CaselessKeyword("EBP")
+            | pp.CaselessKeyword("SP")
+            | pp.CaselessKeyword("ESP")
+            | pp.CaselessKeyword("R8W")
+            | pp.CaselessKeyword("R8D")
+            | pp.CaselessKeyword("R9W")
+            | pp.CaselessKeyword("R9D")
+            | pp.CaselessKeyword("R12D")
+            | pp.CaselessKeyword("R13W")
+            | pp.CaselessKeyword("R13D")
+            | pp.CaselessKeyword("R14W")
+            | pp.CaselessKeyword("R14D")
         ).setResultsName("name")
         byte_register = (
             pp.CaselessKeyword("AL")
-            ^ pp.CaselessKeyword("AH")
-            ^ pp.CaselessKeyword("CL")
-            ^ pp.CaselessKeyword("CH")
-            ^ pp.CaselessKeyword("DL")
-            ^ pp.CaselessKeyword("DH")
-            ^ pp.CaselessKeyword("BL")
-            ^ pp.CaselessKeyword("BH")
-            ^ pp.CaselessKeyword("R8B")
-            ^ pp.CaselessKeyword("R9B")
-            ^ pp.CaselessKeyword("R10B")
-            ^ pp.CaselessKeyword("R11B")
-            ^ pp.CaselessKeyword("R12B")
-            ^ pp.CaselessKeyword("R13B")
+            | pp.CaselessKeyword("AH")
+            | pp.CaselessKeyword("CL")
+            | pp.CaselessKeyword("CH")
+            | pp.CaselessKeyword("DL")
+            | pp.CaselessKeyword("DH")
+            | pp.CaselessKeyword("BL")
+            | pp.CaselessKeyword("BH")
+            | pp.CaselessKeyword("R8B")
+            | pp.CaselessKeyword("R9B")
+            | pp.CaselessKeyword("R10B")
+            | pp.CaselessKeyword("R11B")
+            | pp.CaselessKeyword("R12B")
+            | pp.CaselessKeyword("R13B")
         ).setResultsName("name")
         qword_register = (
             pp.CaselessKeyword("RAX")
-            ^ pp.CaselessKeyword("RCX")
-            ^ pp.CaselessKeyword("RDX")
-            ^ pp.CaselessKeyword("RBX")
-            ^ pp.CaselessKeyword("RSP")
-            ^ pp.CaselessKeyword("RBP")
-            ^ pp.CaselessKeyword("RSI")
-            ^ pp.CaselessKeyword("RDI")
-            ^ pp.CaselessKeyword("R8")
-            ^ pp.CaselessKeyword("R9")
-            ^ pp.CaselessKeyword("R10")
-            ^ pp.CaselessKeyword("R11")
-            ^ pp.CaselessKeyword("R12")
-            ^ pp.CaselessKeyword("R13")
-            ^ pp.CaselessKeyword("R14")
-            ^ pp.CaselessKeyword("R15")
+            | pp.CaselessKeyword("RCX")
+            | pp.CaselessKeyword("RDX")
+            | pp.CaselessKeyword("RBX")
+            | pp.CaselessKeyword("RSP")
+            | pp.CaselessKeyword("RBP")
+            | pp.CaselessKeyword("RSI")
+            | pp.CaselessKeyword("RDI")
+            | pp.CaselessKeyword("R8")
+            | pp.CaselessKeyword("R9")
+            | pp.CaselessKeyword("R10")
+            | pp.CaselessKeyword("R11")
+            | pp.CaselessKeyword("R12")
+            | pp.CaselessKeyword("R13")
+            | pp.CaselessKeyword("R14")
+            | pp.CaselessKeyword("R15")
         ).setResultsName("name")
         fpu_register = pp.Combine(
-            pp.CaselessKeyword("ST") + pp.Literal("(") + pp.Word("01234567") + pp.Literal(")")
+            pp.CaselessKeyword("ST")
+            + pp.Optional(pp.Literal("(") + pp.Word("01234567") + pp.Literal(")"))
         ).setResultsName("name")
         xmm_register = (
             pp.Combine(pp.CaselessLiteral("XMM") + pp.Word(pp.nums))
-            ^ pp.Combine(pp.CaselessLiteral("XMM1") + pp.Word("012345"))
+            | pp.Combine(pp.CaselessLiteral("XMM1") + pp.Word("012345"))
         )
         simd_register = (
             pp.Combine(pp.CaselessLiteral("MM") + pp.Word("01234567"))
-            ^ xmm_register
-            ^ pp.Combine(pp.CaselessLiteral("YMM") + pp.Word(pp.nums))
-            ^ pp.Combine(pp.CaselessLiteral("YMM1") + pp.Word("012345"))
+            | xmm_register
+            | pp.Combine(pp.CaselessLiteral("YMM") + pp.Word(pp.nums))
+            | pp.Combine(pp.CaselessLiteral("YMM1") + pp.Word("012345"))
         ).setResultsName("name")
         segment_register = (
             pp.CaselessKeyword("CS")
-            ^ pp.CaselessKeyword("DS")
-            ^ pp.CaselessKeyword("ES")
-            ^ pp.CaselessKeyword("FS")
-            ^ pp.CaselessKeyword("GS")
-            ^ pp.CaselessKeyword("SS")
+            | pp.CaselessKeyword("DS")
+            | pp.CaselessKeyword("ES")
+            | pp.CaselessKeyword("FS")
+            | pp.CaselessKeyword("GS")
+            | pp.CaselessKeyword("SS")
         ).setResultsName("name")
         self.register = pp.Group(
             special_register
-            ^ gp_register
-            ^ byte_register
-            ^ qword_register
-            ^ fpu_register
-            ^ simd_register
-            ^ segment_register
+            | gp_register
+            | byte_register
+            | qword_register
+            | fpu_register
+            | simd_register
+            | segment_register
         ).setResultsName(self.register_id)
 
         # Register expressions.
@@ -175,13 +199,7 @@ class ParserX86Intel(BaseParser):
         scale = pp.Word("1248", exact=1)
         displacement = pp.Group(integer_number | identifier).setResultsName(self.immediate_id)
         register_expression = pp.Group(
-            # The assembly produced by MSVC appears to have the displacement first, just like in the
-            # AT&T syntax, even though the Intel syntax wants it within the brackets.  Better allow
-            # both.  Note that "displacement" is the Intel terminology, AT&T uses "offset".
-            pp.Optional(
-                pp.Group(displacement).setResultsName("displacement1")
-            )
-            + pp.Literal("[")
+            pp.Literal("[")
             + pp.Optional(base_register.setResultsName("base"))
             + pp.Optional(
                 pp.Literal("+")
@@ -190,57 +208,67 @@ class ParserX86Intel(BaseParser):
             )
             + pp.Optional(
                 pp.Literal("+")
-                + pp.Group(displacement).setResultsName("displacement2")
+                + pp.Group(displacement).setResultsName("displacement")
             )
             + pp.Literal("]")
         ).setResultsName("register_expression")
 
-        # Types.
-        ptr_type = pp.Group(
-            (
-                pp.CaselessKeyword("BIT")
-                ^ pp.CaselessKeyword("BYTE")
-                ^ pp.CaselessKeyword("WORD")
-                ^ pp.CaselessKeyword("DWORD")
-                ^ pp.CaselessKeyword("PWORD")
-                ^ pp.CaselessKeyword("QWORD")
-                ^ pp.CaselessKeyword("TBYTE")
-                ^ pp.CaselessKeyword("NEAR")
-                ^ pp.CaselessKeyword("FAR")
-            )
-            + pp.CaselessKeyword("PTR")
-        ).setResultsName("ptr_type")
-
-        # Memory reference.
-        memory = pp.Group(
-            ptr_type + register_expression
-        ).setResultsName(self.memory_id)
-
         # Immediate.
-        # TODO: Support complex expressions?
         immediate = pp.Group(
-            integer_number ^ float_number ^ identifier
+            integer_number | float_number | identifier
         ).setResultsName(self.immediate_id)
+
+        # Expressions.
+        # The ASM86 manual has weird expressions on page 130 (displacement outside of the register
+        # expression, multiple register expressions).  Let's ignore those for now, but see
+        # https://stackoverflow.com/questions/71540754/why-sometimes-use-offset-flatlabel-and-sometimes-not.
+        address_expression = pp.Group(
+            immediate + register_expression
+            ^ register_expression
+        ).setResultsName("address_expression")
+
+        offset_expression = pp.Group(
+            pp.CaselessKeyword("OFFSET")
+            + pp.Group(
+                pp.CaselessKeyword("GROUP")
+                | pp.CaselessKeyword("SEGMENT")
+                | pp.CaselessKeyword("FLAT")
+            )
+            # The MASM grammar has the ":" immediately after "OFFSET", but that's not what MSVC
+            # outputs.
+            + pp.Literal(":")
+            + identifier
+        ).setResultsName("offset_expression")
+        ptr_expression = pp.Group(
+            data_type + pp.CaselessKeyword("PTR") + address_expression
+        ).setResultsName("ptr_expression")
+        short_expression = pp.Group(
+            pp.CaselessKeyword("SHORT") + identifier
+        ).setResultsName("short_expression")
 
         # Instructions.
         mnemonic = pp.Word(
             pp.alphas, pp.alphanums
         ).setResultsName("mnemonic")
-        operand_first = pp.Group(
-            memory ^ self.register ^ immediate ^ identifier
-        )
-        operand_rest = pp.Group(
-            memory ^ self.register ^ immediate ^ identifier
+        operand = pp.Group(
+            self.register
+            | pp.Group(
+                offset_expression
+                | ptr_expression
+                | short_expression
+                | address_expression
+            ).setResultsName(self.memory_id)
+            | immediate
         )
         self.instruction_parser = (
             mnemonic
-            + pp.Optional(operand_first.setResultsName("operand1"))
+            + pp.Optional(operand.setResultsName("operand1"))
             + pp.Optional(pp.Suppress(pp.Literal(",")))
-            + pp.Optional(operand_rest.setResultsName("operand2"))
+            + pp.Optional(operand.setResultsName("operand2"))
             + pp.Optional(pp.Suppress(pp.Literal(",")))
-            + pp.Optional(operand_rest.setResultsName("operand3"))
+            + pp.Optional(operand.setResultsName("operand3"))
             + pp.Optional(pp.Suppress(pp.Literal(",")))
-            + pp.Optional(operand_rest.setResultsName("operand4"))
+            + pp.Optional(operand.setResultsName("operand4"))
             + pp.Optional(self.comment)
         )
 
@@ -362,15 +390,8 @@ class ParserX86Intel(BaseParser):
     def process_register(self, operand):
         return RegisterOperand(name=operand.name)
 
-    def process_memory_address(self, memory_address):
-        """Post-process memory address operand"""
-        # TODO: Use the ptr type.
-        ptr_type = memory_address.ptr_type
-        register_expression = memory_address.register_expression
-        displacement = register_expression.get(
-            "displacement1",
-            register_expression.get("displacement2")
-        )
+    def process_register_expression(self, register_expression):
+        displacement = register_expression.get("displacement")
         base = register_expression.get("base")
         index = register_expression.get("index")
         scale = int(register_expression.get("scale", "1"), 0)
@@ -378,10 +399,49 @@ class ParserX86Intel(BaseParser):
         base_op = RegisterOperand(name=base.name) if base else None
         index_op = RegisterOperand(name=index.name) if index else None
         new_memory = MemoryOperand(offset=displacement_op, base=base_op, index=index_op, scale=scale)
-        # Add segmentation extension if existing
-        if self.segment_ext in memory_address:
-            new_memory.segment_ext = memory_address[self.segment_ext]
         return new_memory
+
+    def process_address_expression(self, address_expression):
+        # TODO: It seems that we could have a prefix immediate operand, a displacement in the
+        # brackets, and an offset.  How all of this works together is somewhat mysterious.
+        immediate_operand = (
+            self.process_immediate(address_expression.immediate)
+            if "immediate" in address_expression else None
+        )
+        register_expression = (
+            self.process_register_expression(address_expression.register_expression)
+            if "register_expression" in address_expression else None
+        )
+        if register_expression:
+            if immediate_operand:
+                register_expression.offset = immediate_operand
+            return register_expression
+        else:
+            return MemoryOperand(base=immediate_operand)
+
+    def process_offset_expression(self, offset_expression):
+        # TODO: Record that this is an offset expression.
+        return MemoryOperand(base=self.process_identifier(offset_expression.identifier))
+
+    def process_ptr_expression(self, ptr_expression):
+        # TODO: Do something with the data_type.
+        return self.process_address_expression(ptr_expression.address_expression)
+
+    def process_short_expression(self, short_expression):
+        # TODO: Do something with the fact that it is short.
+        return LabelOperand(name=short_expression.identifier.name)
+
+    def process_memory_address(self, memory_address):
+        """Post-process memory address operand"""
+        if "address_expression" in memory_address:
+            return self.process_address_expression(memory_address.address_expression)
+        elif "offset_expression" in memory_address:
+            return self.process_offset_expression(memory_address.offset_expression)
+        elif "ptr_expression" in memory_address:
+            return self.process_ptr_expression(memory_address.ptr_expression)
+        elif "short_expression" in memory_address:
+            return self.process_short_expression(memory_address.short_expression)
+        return memory_address
 
     def process_label(self, label):
         """Post-process label asm line"""
