@@ -63,9 +63,9 @@ class TestParserX86Intel(unittest.TestCase):
         instr4 = "\tmov\teax, DWORD PTR cur_elements$[rbp]"
         instr5 = "\tmov\tQWORD PTR [rsp+24], r8"
 
-        # parsed_1 = self.parser.parse_instruction(instr1)
-        # parsed_2 = self.parser.parse_instruction(instr2)
-        # parsed_3 = self.parser.parse_instruction(instr3)
+        parsed_1 = self.parser.parse_instruction(instr1)
+        parsed_2 = self.parser.parse_instruction(instr2)
+        parsed_3 = self.parser.parse_instruction(instr3)
         parsed_4 = self.parser.parse_instruction(instr4)
         parsed_5 = self.parser.parse_instruction(instr5)
 
