@@ -3,9 +3,10 @@
 import pyparsing as pp
 
 from osaca.parser import BaseParser
-from osaca.parser.instruction_form import InstructionForm
+from osaca.parser.directive import DirectiveOperand
 from osaca.parser.identifier import IdentifierOperand
 from osaca.parser.immediate import ImmediateOperand
+from osaca.parser.instruction_form import InstructionForm
 from osaca.parser.label import LabelOperand
 from osaca.parser.memory import MemoryOperand
 from osaca.parser.register import RegisterOperand
@@ -279,6 +280,88 @@ class ParserX86Intel(BaseParser):
             + pp.Optional(self.instruction_parser)
         ).setResultsName(self.label_id)
 
+        # Directives.
+        # Parameter can be any quoted string or sequence of characters besides ';' (for comments)
+        # or ',' (parameter delimiter).  See ASM386 p. 38.
+        directive_parameter = (
+            pp.quotedString
+            ^ (
+                pp.Word(pp.printables, excludeChars=",;")
+                + pp.Optional(pp.Suppress(pp.Literal(",")))
+            )
+            ^ pp.Suppress(pp.Literal(","))
+        )
+        self.directive = pp.Group(
+            pp.Optional(identifier)
+            # The directives that don't start with a "." are ambiguous with instructions, so we list
+            # them explicitly.
+            + pp.Group(
+                pp.Combine(pp.Literal(".") + pp.Word(pp.alphanums + "_"))
+                | pp.CaselessKeyword("ALIAS")
+                | pp.CaselessKeyword("ALIGN")
+                | pp.CaselessKeyword("ASSUME")
+                | pp.CaselessKeyword("BYTE")
+                | pp.CaselessKeyword("CATSTR")
+                | pp.CaselessKeyword("COMM")
+                | pp.CaselessKeyword("COMMENT")
+                | pp.CaselessKeyword("DB")
+                | pp.CaselessKeyword("DD")
+                | pp.CaselessKeyword("DF")
+                | pp.CaselessKeyword("DQ")
+                | pp.CaselessKeyword("DT")
+                | pp.CaselessKeyword("DW")
+                | pp.CaselessKeyword("DWORD")
+                | pp.CaselessKeyword("ECHO")
+                | pp.CaselessKeyword("END")
+                | pp.CaselessKeyword("ENDP")
+                | pp.CaselessKeyword("ENDS")
+                | pp.CaselessKeyword("EQU")
+                | pp.CaselessKeyword("EVEN")
+                | pp.CaselessKeyword("EXTERN")
+                | pp.CaselessKeyword("EXTERNDEF")
+                | pp.CaselessKeyword("FWORD")
+                | pp.CaselessKeyword("GROUP")
+                | pp.CaselessKeyword("INCLUDE")
+                | pp.CaselessKeyword("INCLUDELIB")
+                | pp.CaselessKeyword("INSTR")
+                | pp.CaselessKeyword("INVOKE")
+                | pp.CaselessKeyword("LABEL")
+                | pp.CaselessKeyword("MMWORD")
+                | pp.CaselessKeyword("OPTION")
+                | pp.CaselessKeyword("ORG")
+                | pp.CaselessKeyword("PAGE")
+                | pp.CaselessKeyword("POPCONTEXT")
+                | pp.CaselessKeyword("PROC")
+                | pp.CaselessKeyword("PROTO")
+                | pp.CaselessKeyword("PUBLIC")
+                | pp.CaselessKeyword("PUSHCONTEXT")
+                | pp.CaselessKeyword("QWORD")
+                | pp.CaselessKeyword("REAL10")
+                | pp.CaselessKeyword("REAL4")
+                | pp.CaselessKeyword("REAL8")
+                | pp.CaselessKeyword("RECORD")
+                | pp.CaselessKeyword("SBYTE")
+                | pp.CaselessKeyword("SDWORD")
+                | pp.CaselessKeyword("SEGMENT")
+                | pp.CaselessKeyword("SIZESTR")
+                | pp.CaselessKeyword("STRUCT")
+                | pp.CaselessKeyword("SUBSTR")
+                | pp.CaselessKeyword("SUBTITLE")
+                | pp.CaselessKeyword("SWORD")
+                | pp.CaselessKeyword("TBYTE")
+                | pp.CaselessKeyword("TEXTEQU")
+                | pp.CaselessKeyword("TITLE")
+                | pp.CaselessKeyword("TYPEDEF")
+                | pp.CaselessKeyword("UNION")
+                | pp.CaselessKeyword("WORD")
+                | pp.CaselessKeyword("XMMWORD")
+                | pp.CaselessKeyword("YMMWORD")
+                | pp.Literal("=")
+            ).setResultsName("name")
+            + pp.ZeroOrMore(directive_parameter).setResultsName("parameters")
+            + pp.Optional(self.comment)
+        ).setResultsName(self.directive_id)
+
     def parse_line(self, line, line_number=None):
         """
         Parse line and return instruction form.
@@ -291,17 +374,17 @@ class ParserX86Intel(BaseParser):
         instruction_form = InstructionForm(line=line, line_number=line_number)
         result = None
 
-        # 1. Parse comment
+        # 1. Parse comment.
         try:
             result = self.process_operand(self.comment.parseString(line, parseAll=True))
             instruction_form.comment = " ".join(result[self.comment_id])
         except pp.ParseException:
             pass
 
-        # 2. Parse label
+        # 2. Parse label.
         if not result:
             try:
-                # returns tuple with label operand and comment, if any
+                # Returns tuple with label operand and comment, if any.
                 result = self.process_operand(self.label.parseString(line, parseAll=True))
                 instruction_form.label = result[0].name
                 if result[1] is not None:
@@ -309,7 +392,25 @@ class ParserX86Intel(BaseParser):
             except pp.ParseException:
                 pass
 
-        # 4. Parse instruction
+        # 3. Parse directive.
+        if result is None:
+            try:
+                # Returns tuple with directive operand and comment, if any.
+                # TODO: Do something with the identifier.
+                result = self.process_operand(
+                    self.directive.parseString(line, parseAll=True).asDict()
+                )
+                instruction_form.directive = DirectiveOperand(
+                    name=result[0].name,
+                    parameters=result[0].parameters,
+                )
+
+                if result[1] is not None:
+                    instruction_form.comment = " ".join(result[1])
+            except pp.ParseException:
+                pass
+
+        # 4. Parse instruction.
         if not result:
             try:
                 result = self.parse_instruction(line)
@@ -375,6 +476,8 @@ class ParserX86Intel(BaseParser):
 
     def process_operand(self, operand):
         """Post-process operand"""
+        if self.directive_id in operand:
+            return self.process_directive(operand[self.directive_id])
         if self.identifier in operand:
             return self.process_identifier(operand[self.identifier])
         if self.immediate_id in operand:
@@ -386,6 +489,13 @@ class ParserX86Intel(BaseParser):
         if self.register_id in operand:
             return self.process_register(operand[self.register_id])
         return operand
+
+    def process_directive(self, directive):
+        directive_new = DirectiveOperand(
+            name=directive.name,
+            parameters=directive.parameters if "parameters" in directive else [],
+        )
+        return directive_new, directive.comment if "comment" in directive else None
 
     def process_register(self, operand):
         return RegisterOperand(name=operand.name)

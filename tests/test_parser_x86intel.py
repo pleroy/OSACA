@@ -57,6 +57,14 @@ class TestParserX86Intel(unittest.TestCase):
             )
         )
 
+    def test_directive_parser(self):
+        #self.assertEqual(self._get_directive(self.parser, "\t.allocstack 16")[0].name, "text")
+        self.assertEqual(self._get_directive(self.parser, "INCLUDELIB MSVCRTD")[0].name, "text")
+        self.assertEqual(self._get_directive(self.parser, "msvcjmc\tSEGMENT")[0].name, "text")
+        self.assertEqual(self._get_directive(self.parser, "EXTRN	_RTC_InitBase:PROC")[0].name, "text")
+        self.assertEqual(self._get_directive(self.parser, "$pdata$kernel DD imagerel $LN9")[0].name, "text")
+        self.assertEqual(self._get_directive(self.parser, "repeat$ = 320")[0].name, "text")
+
     def test_parse_instruction(self):
         instr1 = "\tsub\trsp, 296\t\t\t\t; 00000128H"
         instr2 = "  fst ST(3)\t; Good ol' x87."
@@ -198,6 +206,9 @@ class TestParserX86Intel(unittest.TestCase):
 
     def _get_label(self, parser, label):
         return parser.process_operand(parser.label.parseString(label, parseAll=True))
+
+    def _get_directive(self, parser, directive):
+        return parser.process_operand(parser.directive.parseString(directive, parseAll=True))
 
     @staticmethod
     def _find_file(name):
