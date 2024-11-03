@@ -11,6 +11,9 @@ from osaca.parser.label import LabelOperand
 from osaca.parser.memory import MemoryOperand
 from osaca.parser.register import RegisterOperand
 
+# References:
+#   ASM386 Assembly Language Reference, document number 469165-003, https://mirror.math.princeton.edu/pub/oldlinux/Linux.old/Ref-docs/asm-ref.pdf
+#   Microsoft Macro Assembler BNF Grammar, https://learn.microsoft.com/en-us/cpp/assembler/masm/masm-bnf-grammar?view=msvc-170.
 class ParserX86Intel(BaseParser):
     _instance = None
 
@@ -73,8 +76,7 @@ class ParserX86Intel(BaseParser):
         ).setResultsName("data_type")
 
         # Identifier.  Note that $ is not mentioned in the ASM386 Assembly Language Reference,
-        # but it is mentioned in the MASM syntax:
-        # https://learn.microsoft.com/en-us/cpp/assembler/masm/masm-bnf-grammar?view=msvc-170.
+        # but it is mentioned in the MASM syntax
         first = pp.Word(pp.alphas + "$?@_", exact=1)
         rest = pp.Word(pp.alphanums + "$?@_")
         identifier = pp.Group(
@@ -218,9 +220,10 @@ class ParserX86Intel(BaseParser):
         ).setResultsName(self.immediate_id)
 
         # Expressions.
+        # The ASM86 manual has weird expressions on page 130 (displacement outside of the register
+        # expression, multiple expressions).  Let's ignore those for now.
         address_expression = pp.Group(
-            immediate + "+" + integer_number.setResultsName("offset")
-            ^ immediate + register_expression
+            immediate + register_expression
             ^ register_expression
         ).setResultsName("address_expression")
 
