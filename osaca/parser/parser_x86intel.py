@@ -57,20 +57,20 @@ class ParserX86Intel(BaseParser):
         # Types.
         data_type = (
             pp.CaselessKeyword("BYTE")
-            | pp.CaselessKeyword("SBYTE")
-            | pp.CaselessKeyword("WORD")
-            | pp.CaselessKeyword("SWORD")
             | pp.CaselessKeyword("DWORD")
-            | pp.CaselessKeyword("SDWORD")
             | pp.CaselessKeyword("FWORD")
-            | pp.CaselessKeyword("QWORD")
-            | pp.CaselessKeyword("SQWORD")
-            | pp.CaselessKeyword("TBYTE")
+            | pp.CaselessKeyword("MMWORD")
             | pp.CaselessKeyword("OWORD")
+            | pp.CaselessKeyword("QWORD")
+            | pp.CaselessKeyword("REAL10")
             | pp.CaselessKeyword("REAL4")
             | pp.CaselessKeyword("REAL8")
-            | pp.CaselessKeyword("REAL10")
-            | pp.CaselessKeyword("MMWORD")
+            | pp.CaselessKeyword("SBYTE")
+            | pp.CaselessKeyword("SDWORD")
+            | pp.CaselessKeyword("SQWORD")
+            | pp.CaselessKeyword("SWORD")
+            | pp.CaselessKeyword("TBYTE")
+            | pp.CaselessKeyword("WORD")
             | pp.CaselessKeyword("XMMWORD")
             | pp.CaselessKeyword("YMMWORD")
         ).setResultsName("data_type")
@@ -293,6 +293,8 @@ class ParserX86Intel(BaseParser):
         )
         # The directives that don't start with a "." are ambiguous with instructions, so we list
         # them explicitly.
+        # TODO: The directives that are types introduce a nasty ambiguity with instructions.  Skip
+        # them for now, apparently the MSVC output uses the short D? directives.
         directive_keywords = (
             pp.CaselessKeyword("ALIAS")
             | pp.CaselessKeyword("ALIGN")
@@ -307,7 +309,7 @@ class ParserX86Intel(BaseParser):
             | pp.CaselessKeyword("DQ")
             | pp.CaselessKeyword("DT")
             | pp.CaselessKeyword("DW")
-            | pp.CaselessKeyword("DWORD")
+            #| pp.CaselessKeyword("DWORD")
             | pp.CaselessKeyword("ECHO")
             | pp.CaselessKeyword("END")
             | pp.CaselessKeyword("ENDP")
@@ -316,14 +318,14 @@ class ParserX86Intel(BaseParser):
             | pp.CaselessKeyword("EVEN")
             | pp.CaselessKeyword("EXTRN")
             | pp.CaselessKeyword("EXTERNDEF")
-            | pp.CaselessKeyword("FWORD")
+            #| pp.CaselessKeyword("FWORD")
             | pp.CaselessKeyword("GROUP")
             | pp.CaselessKeyword("INCLUDE")
             | pp.CaselessKeyword("INCLUDELIB")
             | pp.CaselessKeyword("INSTR")
             | pp.CaselessKeyword("INVOKE")
             | pp.CaselessKeyword("LABEL")
-            | pp.CaselessKeyword("MMWORD")
+            #| pp.CaselessKeyword("MMWORD")
             | pp.CaselessKeyword("OPTION")
             | pp.CaselessKeyword("ORG")
             | pp.CaselessKeyword("PAGE")
@@ -332,27 +334,27 @@ class ParserX86Intel(BaseParser):
             | pp.CaselessKeyword("PROTO")
             | pp.CaselessKeyword("PUBLIC")
             | pp.CaselessKeyword("PUSHCONTEXT")
-            | pp.CaselessKeyword("QWORD")
-            | pp.CaselessKeyword("REAL10")
-            | pp.CaselessKeyword("REAL4")
-            | pp.CaselessKeyword("REAL8")
+            #| pp.CaselessKeyword("QWORD")
+            #| pp.CaselessKeyword("REAL10")
+            #| pp.CaselessKeyword("REAL4")
+            #| pp.CaselessKeyword("REAL8")
             | pp.CaselessKeyword("RECORD")
-            | pp.CaselessKeyword("SBYTE")
-            | pp.CaselessKeyword("SDWORD")
+            #| pp.CaselessKeyword("SBYTE")
+            #| pp.CaselessKeyword("SDWORD")
             | pp.CaselessKeyword("SEGMENT")
             | pp.CaselessKeyword("SIZESTR")
             | pp.CaselessKeyword("STRUCT")
             | pp.CaselessKeyword("SUBSTR")
             | pp.CaselessKeyword("SUBTITLE")
-            | pp.CaselessKeyword("SWORD")
-            | pp.CaselessKeyword("TBYTE")
+            #| pp.CaselessKeyword("SWORD")
+            #| pp.CaselessKeyword("TBYTE")
             | pp.CaselessKeyword("TEXTEQU")
             | pp.CaselessKeyword("TITLE")
             | pp.CaselessKeyword("TYPEDEF")
             | pp.CaselessKeyword("UNION")
-            | pp.CaselessKeyword("WORD")
-            | pp.CaselessKeyword("XMMWORD")
-            | pp.CaselessKeyword("YMMWORD")
+            #| pp.CaselessKeyword("WORD")
+            #| pp.CaselessKeyword("XMMWORD")
+            #| pp.CaselessKeyword("YMMWORD")
         )
         self.directive = pp.Group(
             pp.Optional(~directive_keywords + identifier)
@@ -399,9 +401,8 @@ class ParserX86Intel(BaseParser):
         if result is None:
             try:
                 # Returns tuple with directive operand and comment, if any.
-                # TODO: Do something with the identifier.
                 result = self.process_operand(
-                    self.directive.parseString(line, parseAll=True).asDict()
+                    self.directive.parseString(line, parseAll=True)
                 )
                 instruction_form.directive = DirectiveOperand(
                     name=result[0].name,
@@ -499,7 +500,7 @@ class ParserX86Intel(BaseParser):
         parameters.extend(list(directive.parameters))
         directive_new = DirectiveOperand(
             name=directive.name,
-            parameters=parameters
+            parameters=parameters if parameters != [] else None
         )
         return directive_new, directive.comment if "comment" in directive else None
 

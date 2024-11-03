@@ -186,6 +186,23 @@ class TestParserX86Intel(unittest.TestCase):
         self.assertEqual(self.parser.parse_register(register_str_3), parsed_reg_3)
         self.assertEqual(self.parser.parse_register(register_str_4), parsed_reg_4)
 
+    def test_parse_file(self):
+        parsed = self.parser.parse_file(self.triad_code)
+        self.assertEqual(parsed[0].line_number, 1)
+        # Check a few lines to make sure that we produced something reasonable.
+        self.assertEqual(parsed[60],
+                         InstructionForm(mnemonic="mov",
+                                         operands=[MemoryOperand(base=RegisterOperand("RSP"),
+                                                                 offset=ImmediateOperand(value=8)),
+                                                   RegisterOperand(name="RCX")],
+                                         line="\tmov\tQWORD PTR [rsp+8], rcx",
+                                         line_number=64))
+        self.assertEqual(parsed[120],
+                         InstructionForm(directive_id=DirectiveOperand(name="END"),
+                                         line="END",
+                                         line_number=124))
+        self.assertEqual(len(parsed), 121)
+
     def test_normalize_imd(self):
         imd_binary = ImmediateOperand(value="1001111B")
         imd_octal = ImmediateOperand(value="117O")
