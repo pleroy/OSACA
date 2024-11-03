@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from time import process_time
 import pyparsing as pp
 
 from osaca.parser import BaseParser
@@ -49,6 +50,27 @@ class ParserX86Intel(BaseParser):
         self.comment = pp.Literal(";") + pp.Group(
             pp.ZeroOrMore(pp.Word(pp.printables))
         ).setResultsName(self.comment_id)
+
+        # Types.
+        data_type = (
+            pp.CaselessKeyword("BYTE")
+            ^ pp.CaselessKeyword("SBYTE")
+            ^ pp.CaselessKeyword("WORD")
+            ^ pp.CaselessKeyword("SWORD")
+            ^ pp.CaselessKeyword("DWORD")
+            ^ pp.CaselessKeyword("SDWORD")
+            ^ pp.CaselessKeyword("FWORD")
+            ^ pp.CaselessKeyword("QWORD")
+            ^ pp.CaselessKeyword("SQWORD")
+            ^ pp.CaselessKeyword("TBYTE")
+            ^ pp.CaselessKeyword("OWORD")
+            ^ pp.CaselessKeyword("REAL4")
+            ^ pp.CaselessKeyword("REAL8")
+            ^ pp.CaselessKeyword("REAL10")
+            ^ pp.CaselessKeyword("MMWORD")
+            ^ pp.CaselessKeyword("XMMWORD")
+            ^ pp.CaselessKeyword("YMMWORD")
+        ).setResultsName("data_type")
 
         # Identifier.  Note that $ is not mentioned in the ASM386 Assembly Language Reference,
         # but it is mentioned in the MASM syntax:
@@ -139,7 +161,8 @@ class ParserX86Intel(BaseParser):
             ^ pp.CaselessKeyword("R15")
         ).setResultsName("name")
         fpu_register = pp.Combine(
-            pp.CaselessKeyword("ST") + pp.Literal("(") + pp.Word("01234567") + pp.Literal(")")
+            pp.CaselessKeyword("ST")
+            + pp.Optional(pp.Literal("(") + pp.Word("01234567") + pp.Literal(")"))
         ).setResultsName("name")
         xmm_register = (
             pp.Combine(pp.CaselessLiteral("XMM") + pp.Word(pp.nums))
@@ -175,13 +198,7 @@ class ParserX86Intel(BaseParser):
         scale = pp.Word("1248", exact=1)
         displacement = pp.Group(integer_number | identifier).setResultsName(self.immediate_id)
         register_expression = pp.Group(
-            # The assembly produced by MSVC appears to have the displacement first, just like in the
-            # AT&T syntax, even though the Intel syntax wants it within the brackets.  Better allow
-            # both.  Note that "displacement" is the Intel terminology, AT&T uses "offset".
-            pp.Optional(
-                pp.Group(displacement).setResultsName("displacement1")
-            )
-            + pp.Literal("[")
+            pp.Literal("[")
             + pp.Optional(base_register.setResultsName("base"))
             + pp.Optional(
                 pp.Literal("+")
@@ -190,57 +207,56 @@ class ParserX86Intel(BaseParser):
             )
             + pp.Optional(
                 pp.Literal("+")
-                + pp.Group(displacement).setResultsName("displacement2")
+                + pp.Group(displacement).setResultsName("displacement")
             )
             + pp.Literal("]")
         ).setResultsName("register_expression")
 
-        # Types.
-        ptr_type = pp.Group(
-            (
-                pp.CaselessKeyword("BIT")
-                ^ pp.CaselessKeyword("BYTE")
-                ^ pp.CaselessKeyword("WORD")
-                ^ pp.CaselessKeyword("DWORD")
-                ^ pp.CaselessKeyword("PWORD")
-                ^ pp.CaselessKeyword("QWORD")
-                ^ pp.CaselessKeyword("TBYTE")
-                ^ pp.CaselessKeyword("NEAR")
-                ^ pp.CaselessKeyword("FAR")
-            )
-            + pp.CaselessKeyword("PTR")
-        ).setResultsName("ptr_type")
-
-        # Memory reference.
-        memory = pp.Group(
-            ptr_type + register_expression
-        ).setResultsName(self.memory_id)
-
         # Immediate.
-        # TODO: Support complex expressions?
         immediate = pp.Group(
             integer_number ^ float_number ^ identifier
         ).setResultsName(self.immediate_id)
+
+        # Expressions.
+        address_expression = pp.Group(
+            immediate + pp.Optional("+" + integer_number).setResultsName("offset")
+            ^ immediate + register_expression
+            ^ register_expression
+        ).setResultsName("address_expression")
+
+        offset_expression = pp.Group(
+            pp.CaselessKeyword("OFFSET") + identifier
+        ).setResultsName("offset_expression")
+        ptr_expression = pp.Group(
+            data_type + pp.CaselessKeyword("PTR") + address_expression
+        ).setResultsName("ptr_expression").setDebug(True, True)
+        short_expression = pp.Group(
+            pp.CaselessKeyword("SHORT") + identifier
+        ).setResultsName("short_expression")
 
         # Instructions.
         mnemonic = pp.Word(
             pp.alphas, pp.alphanums
         ).setResultsName("mnemonic")
-        operand_first = pp.Group(
-            memory ^ self.register ^ immediate ^ identifier
-        )
-        operand_rest = pp.Group(
-            memory ^ self.register ^ immediate ^ identifier
+        operand = pp.Group(
+            self.register
+            | immediate
+            | pp.Group(
+                offset_expression
+                | ptr_expression
+                | short_expression
+                | address_expression
+            ).setResultsName(self.memory_id)
         )
         self.instruction_parser = (
             mnemonic
-            + pp.Optional(operand_first.setResultsName("operand1"))
+            + pp.Optional(operand.setResultsName("operand1"))
             + pp.Optional(pp.Suppress(pp.Literal(",")))
-            + pp.Optional(operand_rest.setResultsName("operand2"))
+            + pp.Optional(operand.setResultsName("operand2"))
             + pp.Optional(pp.Suppress(pp.Literal(",")))
-            + pp.Optional(operand_rest.setResultsName("operand3"))
+            + pp.Optional(operand.setResultsName("operand3"))
             + pp.Optional(pp.Suppress(pp.Literal(",")))
-            + pp.Optional(operand_rest.setResultsName("operand4"))
+            + pp.Optional(operand.setResultsName("operand4"))
             + pp.Optional(self.comment)
         )
 
@@ -362,11 +378,7 @@ class ParserX86Intel(BaseParser):
     def process_register(self, operand):
         return RegisterOperand(name=operand.name)
 
-    def process_memory_address(self, memory_address):
-        """Post-process memory address operand"""
-        # TODO: Use the ptr type.
-        ptr_type = memory_address.ptr_type
-        register_expression = memory_address.register_expression
+    def process_register_expression(self, register_expression):
         displacement = register_expression.get(
             "displacement1",
             register_expression.get("displacement2")
@@ -378,10 +390,46 @@ class ParserX86Intel(BaseParser):
         base_op = RegisterOperand(name=base.name) if base else None
         index_op = RegisterOperand(name=index.name) if index else None
         new_memory = MemoryOperand(offset=displacement_op, base=base_op, index=index_op, scale=scale)
-        # Add segmentation extension if existing
-        if self.segment_ext in memory_address:
-            new_memory.segment_ext = memory_address[self.segment_ext]
         return new_memory
+
+    def process_address_expression(self, address_expression):
+        # TODO: It seems that we could have a prefix immediate operand, a displacement in the
+        # brackets, and an offset.  How all of this works together is somewhat mysterious.
+        immediate_operand = (
+            self.process_immediate(address_expression.immediate)
+            if "immediate" in address_expression else None
+        )
+        register_expression = (
+            self.process_register_expression(address_expression.register_expression)
+            if "register_expression" in address_expression else None
+        )
+        if register_expression and immediate_operand:
+            register_expression.offset = immediate_operand
+            return register_expression
+        else:
+            return MemoryOperand(base=immediate_operand)
+
+    def process_offset_expression(self, offset_expression):
+        return offset_expression
+
+    def process_ptr_expression(self, ptr_expression):
+        # TODO: Do something with the data_type.
+        return self.process_address_expression(ptr_expression.address_expression)
+
+    def process_short_expression(self, short_expression):
+        return short_expression
+
+    def process_memory_address(self, memory_address):
+        """Post-process memory address operand"""
+        if "address_expression" in memory_address:
+            return self.process_address_expression(memory_address.address_expression)
+        elif "offset_expression" in memory_address:
+            return self.process_offset_expression(memory_address.offset_expression)
+        elif "ptr_expression" in memory_address:
+            return self.process_ptr_expression(memory_address.ptr_expression)
+        elif "short_expression" in memory_address:
+            return self.process_short_expression(memory_address.short_expression)
+        return memory_address
 
     def process_label(self, label):
         """Post-process label asm line"""
