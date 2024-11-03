@@ -221,14 +221,24 @@ class ParserX86Intel(BaseParser):
 
         # Expressions.
         # The ASM86 manual has weird expressions on page 130 (displacement outside of the register
-        # expression, multiple expressions).  Let's ignore those for now.
+        # expression, multiple expressions).  Let's ignore those for now, but see
+        # https://stackoverflow.com/questions/71540754/why-sometimes-use-offset-flatlabel-and-sometimes-not.
         address_expression = pp.Group(
             immediate + register_expression
             ^ register_expression
         ).setResultsName("address_expression")
 
         offset_expression = pp.Group(
-            pp.CaselessKeyword("OFFSET") + identifier
+            pp.CaselessKeyword("OFFSET")
+            + pp.Group(
+                pp.CaselessKeyword("GROUP")
+                | pp.CaselessKeyword("SEGMENT")
+                | pp.CaselessKeyword("FLAT")
+            )
+            # The MASM grammar has the ":" immediately after "OFFSET", but that's not what MSVC
+            # outputs.
+            + pp.Literal(":")
+            + identifier
         ).setResultsName("offset_expression")
         ptr_expression = pp.Group(
             data_type + pp.CaselessKeyword("PTR") + address_expression
@@ -411,14 +421,16 @@ class ParserX86Intel(BaseParser):
             return MemoryOperand(base=immediate_operand)
 
     def process_offset_expression(self, offset_expression):
-        return offset_expression
+        # TODO: Record that this is an offset expression.
+        return MemoryOperand(base=self.process_identifier(offset_expression.identifier))
 
     def process_ptr_expression(self, ptr_expression):
         # TODO: Do something with the data_type.
         return self.process_address_expression(ptr_expression.address_expression)
 
     def process_short_expression(self, short_expression):
-        return short_expression
+        # TODO: Do something with the fact that it is short.
+        return LabelOperand(name=short_expression.identifier.name)
 
     def process_memory_address(self, memory_address):
         """Post-process memory address operand"""

@@ -11,6 +11,7 @@ from pyparsing import ParseException
 from osaca.parser import ParserX86Intel, InstructionForm
 from osaca.parser.identifier import IdentifierOperand
 from osaca.parser.immediate import ImmediateOperand
+from osaca.parser.label import LabelOperand
 from osaca.parser.memory import MemoryOperand
 from osaca.parser.register import RegisterOperand
 
@@ -62,12 +63,16 @@ class TestParserX86Intel(unittest.TestCase):
         instr3 = "\tmulsd\txmm0, QWORD PTR [rdx+rcx*8]"
         instr4 = "\tmov\teax, DWORD PTR cur_elements$[rbp]"
         instr5 = "\tmov\tQWORD PTR [rsp+24], r8"
+        instr6 = "\tjmp\tSHORT $LN2@kernel"
+        instr7 = "\tlea\trcx, OFFSET FLAT:__FAC6D534_triad@c"
 
         parsed_1 = self.parser.parse_instruction(instr1)
         parsed_2 = self.parser.parse_instruction(instr2)
         parsed_3 = self.parser.parse_instruction(instr3)
         parsed_4 = self.parser.parse_instruction(instr4)
         parsed_5 = self.parser.parse_instruction(instr5)
+        parsed_6 = self.parser.parse_instruction(instr6)
+        parsed_7 = self.parser.parse_instruction(instr7)
 
         self.assertEqual(parsed_1.mnemonic, "sub")
         self.assertEqual(parsed_1.operands[0],
@@ -102,6 +107,16 @@ class TestParserX86Intel(unittest.TestCase):
                                        base=RegisterOperand(name="RSP")))
         self.assertEqual(parsed_5.operands[1],
                          RegisterOperand(name="R8"))
+
+        self.assertEqual(parsed_6.mnemonic, "jmp")
+        self.assertEqual(parsed_6.operands[0],
+                         LabelOperand(name="$LN2@kernel"))
+
+        self.assertEqual(parsed_7.mnemonic, "lea")
+        self.assertEqual(parsed_7.operands[0],
+                         RegisterOperand(name="RCX"))
+        self.assertEqual(parsed_7.operands[1],
+                         MemoryOperand(base=IdentifierOperand(name="__FAC6D534_triad@c")))
 
     def test_parse_line(self):
         line_comment = "; -- Begin  main"
