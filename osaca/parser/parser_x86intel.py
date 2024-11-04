@@ -392,24 +392,18 @@ class ParserX86Intel(BaseParser):
                 # Returns tuple with label operand and comment, if any.
                 result = self.process_operand(self.label.parseString(line, parseAll=True))
                 instruction_form.label = result[0].name
-                if result[1] is not None:
+                if result[1]:
                     instruction_form.comment = " ".join(result[1])
             except pp.ParseException:
                 pass
 
         # 3. Parse directive.
-        if result is None:
+        if not result:
             try:
                 # Returns tuple with directive operand and comment, if any.
-                result = self.process_operand(
-                    self.directive.parseString(line, parseAll=True)
-                )
-                instruction_form.directive = DirectiveOperand(
-                    name=result[0].name,
-                    parameters=result[0].parameters,
-                )
-
-                if result[1] is not None:
+                result = self.process_operand(self.directive.parseString(line, parseAll=True))
+                instruction_form.directive = result[0]
+                if result[1]:
                     instruction_form.comment = " ".join(result[1])
             except pp.ParseException:
                 pass
@@ -497,12 +491,12 @@ class ParserX86Intel(BaseParser):
     def process_directive(self, directive):
         # TODO: This is putting the identifier in the parameters.  No idea if it's right.
         parameters = [directive.identifier.name] if "identifier" in directive else []
-        parameters.extend(list(directive.parameters))
+        parameters.extend(directive.parameters)
         directive_new = DirectiveOperand(
             name=directive.name,
-            parameters=parameters if parameters != [] else None
+            parameters=parameters or None
         )
-        return directive_new, directive.comment if "comment" in directive else None
+        return directive_new, directive.get("comment")
 
     def process_register(self, operand):
         return RegisterOperand(name=operand.name)
@@ -583,7 +577,7 @@ class ParserX86Intel(BaseParser):
         """Normalize immediate to decimal based representation"""
         if isinstance(imd, IdentifierOperand):
             return imd
-        if imd.value is not None:
+        if imd.value:
             if isinstance(imd.value, str):
                 if '.' in imd.value:
                     return float(imd.value)
