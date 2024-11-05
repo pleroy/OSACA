@@ -3,9 +3,10 @@
 import pyparsing as pp
 
 from osaca.parser import BaseParser
-from osaca.parser.instruction_form import InstructionForm
+from osaca.parser.directive import DirectiveOperand
 from osaca.parser.identifier import IdentifierOperand
 from osaca.parser.immediate import ImmediateOperand
+from osaca.parser.instruction_form import InstructionForm
 from osaca.parser.label import LabelOperand
 from osaca.parser.memory import MemoryOperand
 from osaca.parser.register import RegisterOperand
@@ -56,20 +57,20 @@ class ParserX86Intel(BaseParser):
         # Types.
         data_type = (
             pp.CaselessKeyword("BYTE")
-            | pp.CaselessKeyword("SBYTE")
-            | pp.CaselessKeyword("WORD")
-            | pp.CaselessKeyword("SWORD")
             | pp.CaselessKeyword("DWORD")
-            | pp.CaselessKeyword("SDWORD")
             | pp.CaselessKeyword("FWORD")
-            | pp.CaselessKeyword("QWORD")
-            | pp.CaselessKeyword("SQWORD")
-            | pp.CaselessKeyword("TBYTE")
+            | pp.CaselessKeyword("MMWORD")
             | pp.CaselessKeyword("OWORD")
+            | pp.CaselessKeyword("QWORD")
+            | pp.CaselessKeyword("REAL10")
             | pp.CaselessKeyword("REAL4")
             | pp.CaselessKeyword("REAL8")
-            | pp.CaselessKeyword("REAL10")
-            | pp.CaselessKeyword("MMWORD")
+            | pp.CaselessKeyword("SBYTE")
+            | pp.CaselessKeyword("SDWORD")
+            | pp.CaselessKeyword("SQWORD")
+            | pp.CaselessKeyword("SWORD")
+            | pp.CaselessKeyword("TBYTE")
+            | pp.CaselessKeyword("WORD")
             | pp.CaselessKeyword("XMMWORD")
             | pp.CaselessKeyword("YMMWORD")
         ).setResultsName("data_type")
@@ -279,6 +280,93 @@ class ParserX86Intel(BaseParser):
             + pp.Optional(self.instruction_parser)
         ).setResultsName(self.label_id)
 
+        # Directives.
+        # Parameter can be any quoted string or sequence of characters besides ';' (for comments)
+        # or ',' (parameter delimiter).  See ASM386 p. 38.
+        directive_parameter = (
+            pp.quotedString
+            ^ (
+                pp.Word(pp.printables, excludeChars=",;")
+                + pp.Optional(pp.Suppress(pp.Literal(",")))
+            )
+            ^ pp.Suppress(pp.Literal(","))
+        )
+        # The directives that don't start with a "." are ambiguous with instructions, so we list
+        # them explicitly.
+        # TODO: The directives that are types introduce a nasty ambiguity with instructions.  Skip
+        # them for now, apparently the MSVC output uses the short D? directives.
+        directive_keywords = (
+            pp.CaselessKeyword("ALIAS")
+            | pp.CaselessKeyword("ALIGN")
+            | pp.CaselessKeyword("ASSUME")
+            #| pp.CaselessKeyword("BYTE")
+            | pp.CaselessKeyword("CATSTR")
+            | pp.CaselessKeyword("COMM")
+            | pp.CaselessKeyword("COMMENT")
+            | pp.CaselessKeyword("DB")
+            | pp.CaselessKeyword("DD")
+            | pp.CaselessKeyword("DF")
+            | pp.CaselessKeyword("DQ")
+            | pp.CaselessKeyword("DT")
+            | pp.CaselessKeyword("DW")
+            #| pp.CaselessKeyword("DWORD")
+            | pp.CaselessKeyword("ECHO")
+            | pp.CaselessKeyword("END")
+            | pp.CaselessKeyword("ENDP")
+            | pp.CaselessKeyword("ENDS")
+            | pp.CaselessKeyword("EQU")
+            | pp.CaselessKeyword("EVEN")
+            | pp.CaselessKeyword("EXTRN")
+            | pp.CaselessKeyword("EXTERNDEF")
+            #| pp.CaselessKeyword("FWORD")
+            | pp.CaselessKeyword("GROUP")
+            | pp.CaselessKeyword("INCLUDE")
+            | pp.CaselessKeyword("INCLUDELIB")
+            | pp.CaselessKeyword("INSTR")
+            | pp.CaselessKeyword("INVOKE")
+            | pp.CaselessKeyword("LABEL")
+            #| pp.CaselessKeyword("MMWORD")
+            | pp.CaselessKeyword("OPTION")
+            | pp.CaselessKeyword("ORG")
+            | pp.CaselessKeyword("PAGE")
+            | pp.CaselessKeyword("POPCONTEXT")
+            | pp.CaselessKeyword("PROC")
+            | pp.CaselessKeyword("PROTO")
+            | pp.CaselessKeyword("PUBLIC")
+            | pp.CaselessKeyword("PUSHCONTEXT")
+            #| pp.CaselessKeyword("QWORD")
+            #| pp.CaselessKeyword("REAL10")
+            #| pp.CaselessKeyword("REAL4")
+            #| pp.CaselessKeyword("REAL8")
+            | pp.CaselessKeyword("RECORD")
+            #| pp.CaselessKeyword("SBYTE")
+            #| pp.CaselessKeyword("SDWORD")
+            | pp.CaselessKeyword("SEGMENT")
+            | pp.CaselessKeyword("SIZESTR")
+            | pp.CaselessKeyword("STRUCT")
+            | pp.CaselessKeyword("SUBSTR")
+            | pp.CaselessKeyword("SUBTITLE")
+            #| pp.CaselessKeyword("SWORD")
+            #| pp.CaselessKeyword("TBYTE")
+            | pp.CaselessKeyword("TEXTEQU")
+            | pp.CaselessKeyword("TITLE")
+            | pp.CaselessKeyword("TYPEDEF")
+            | pp.CaselessKeyword("UNION")
+            #| pp.CaselessKeyword("WORD")
+            #| pp.CaselessKeyword("XMMWORD")
+            #| pp.CaselessKeyword("YMMWORD")
+        )
+        self.directive = pp.Group(
+            pp.Optional(~directive_keywords + identifier)
+            + (
+                pp.Combine(pp.Literal(".") + pp.Word(pp.alphanums + "_"))
+                | pp.Literal("=")
+                | directive_keywords
+            ).setResultsName("name")
+            + pp.ZeroOrMore(directive_parameter).setResultsName("parameters")
+            + pp.Optional(self.comment)
+        ).setResultsName(self.directive_id)
+
     def parse_line(self, line, line_number=None):
         """
         Parse line and return instruction form.
@@ -291,25 +379,36 @@ class ParserX86Intel(BaseParser):
         instruction_form = InstructionForm(line=line, line_number=line_number)
         result = None
 
-        # 1. Parse comment
+        # 1. Parse comment.
         try:
             result = self.process_operand(self.comment.parseString(line, parseAll=True))
             instruction_form.comment = " ".join(result[self.comment_id])
         except pp.ParseException:
             pass
 
-        # 2. Parse label
+        # 2. Parse label.
         if not result:
             try:
-                # returns tuple with label operand and comment, if any
+                # Returns tuple with label operand and comment, if any.
                 result = self.process_operand(self.label.parseString(line, parseAll=True))
                 instruction_form.label = result[0].name
-                if result[1] is not None:
+                if result[1]:
                     instruction_form.comment = " ".join(result[1])
             except pp.ParseException:
                 pass
 
-        # 4. Parse instruction
+        # 3. Parse directive.
+        if not result:
+            try:
+                # Returns tuple with directive operand and comment, if any.
+                result = self.process_operand(self.directive.parseString(line, parseAll=True))
+                instruction_form.directive = result[0]
+                if result[1]:
+                    instruction_form.comment = " ".join(result[1])
+            except pp.ParseException:
+                pass
+
+        # 4. Parse instruction.
         if not result:
             try:
                 result = self.parse_instruction(line)
@@ -375,6 +474,8 @@ class ParserX86Intel(BaseParser):
 
     def process_operand(self, operand):
         """Post-process operand"""
+        if self.directive_id in operand:
+            return self.process_directive(operand[self.directive_id])
         if self.identifier in operand:
             return self.process_identifier(operand[self.identifier])
         if self.immediate_id in operand:
@@ -386,6 +487,16 @@ class ParserX86Intel(BaseParser):
         if self.register_id in operand:
             return self.process_register(operand[self.register_id])
         return operand
+
+    def process_directive(self, directive):
+        # TODO: This is putting the identifier in the parameters.  No idea if it's right.
+        parameters = [directive.identifier.name] if "identifier" in directive else []
+        parameters.extend(directive.parameters)
+        directive_new = DirectiveOperand(
+            name=directive.name,
+            parameters=parameters or None
+        )
+        return directive_new, directive.get("comment")
 
     def process_register(self, operand):
         return RegisterOperand(name=operand.name)
@@ -466,7 +577,7 @@ class ParserX86Intel(BaseParser):
         """Normalize immediate to decimal based representation"""
         if isinstance(imd, IdentifierOperand):
             return imd
-        if imd.value is not None:
+        if imd.value:
             if isinstance(imd.value, str):
                 if '.' in imd.value:
                     return float(imd.value)

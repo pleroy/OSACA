@@ -9,6 +9,7 @@ import unittest
 from pyparsing import ParseException
 
 from osaca.parser import ParserX86Intel, InstructionForm
+from osaca.parser.directive import DirectiveOperand
 from osaca.parser.identifier import IdentifierOperand
 from osaca.parser.immediate import ImmediateOperand
 from osaca.parser.label import LabelOperand
@@ -56,6 +57,26 @@ class TestParserX86Intel(unittest.TestCase):
                 line_number=None,
             )
         )
+
+    def test_directive_parser(self):
+        self.assertEqual(self._get_directive(self.parser, "\t.allocstack 16")[0],
+                         DirectiveOperand(name=".allocstack",
+                                          parameters=["16"]))
+        self.assertEqual(self._get_directive(self.parser, "INCLUDELIB MSVCRTD")[0],
+                         DirectiveOperand(name="INCLUDELIB",
+                                          parameters=["MSVCRTD"]))
+        self.assertEqual(self._get_directive(self.parser, "msvcjmc\tSEGMENT")[0],
+                         DirectiveOperand(name="SEGMENT",
+                                          parameters=["msvcjmc"]))
+        self.assertEqual(self._get_directive(self.parser, "EXTRN\t_RTC_InitBase:PROC")[0],
+                         DirectiveOperand(name="EXTRN",
+                                          parameters=["_RTC_InitBase:PROC"]))
+        self.assertEqual(self._get_directive(self.parser, "$pdata$kernel DD imagerel $LN9")[0],
+                         DirectiveOperand(name="DD",
+                                          parameters=["$pdata$kernel", "imagerel", "$LN9"]))
+        self.assertEqual(self._get_directive(self.parser, "repeat$ = 320")[0],
+                         DirectiveOperand(name="=",
+                                          parameters=["repeat$", "320"]))
 
     def test_parse_instruction(self):
         instr1 = "\tsub\trsp, 296\t\t\t\t; 00000128H"
@@ -165,6 +186,23 @@ class TestParserX86Intel(unittest.TestCase):
         self.assertEqual(self.parser.parse_register(register_str_3), parsed_reg_3)
         self.assertEqual(self.parser.parse_register(register_str_4), parsed_reg_4)
 
+    def test_parse_file(self):
+        parsed = self.parser.parse_file(self.triad_code)
+        self.assertEqual(parsed[0].line_number, 1)
+        # Check a few lines to make sure that we produced something reasonable.
+        self.assertEqual(parsed[60],
+                         InstructionForm(mnemonic="mov",
+                                         operands=[MemoryOperand(base=RegisterOperand("RSP"),
+                                                                 offset=ImmediateOperand(value=8)),
+                                                   RegisterOperand(name="RCX")],
+                                         line="\tmov\tQWORD PTR [rsp+8], rcx",
+                                         line_number=64))
+        self.assertEqual(parsed[120],
+                         InstructionForm(directive_id=DirectiveOperand(name="END"),
+                                         line="END",
+                                         line_number=124))
+        self.assertEqual(len(parsed), 121)
+
     def test_normalize_imd(self):
         imd_binary = ImmediateOperand(value="1001111B")
         imd_octal = ImmediateOperand(value="117O")
@@ -198,6 +236,9 @@ class TestParserX86Intel(unittest.TestCase):
 
     def _get_label(self, parser, label):
         return parser.process_operand(parser.label.parseString(label, parseAll=True))
+
+    def _get_directive(self, parser, directive):
+        return parser.process_operand(parser.directive.parseString(directive, parseAll=True))
 
     @staticmethod
     def _find_file(name):
