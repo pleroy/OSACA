@@ -75,12 +75,41 @@ class ParserX86Intel(BaseParser):
             | pp.CaselessKeyword("YMMWORD")
         ).setResultsName("data_type")
 
+        # Reserved words, see ASM386 table C.2.  Only listing here those that are necessary to lift
+        # ambiguities.
+        reserved_words = (
+            pp.CaselessKeyword("BYTE")
+            | pp.CaselessKeyword("DWORD")
+            | pp.CaselessKeyword("FWORD")
+            | pp.CaselessKeyword("MMWORD")
+            | pp.CaselessKeyword("OWORD")
+            | pp.CaselessKeyword("QWORD")
+            | pp.CaselessKeyword("REAL10")
+            | pp.CaselessKeyword("REAL4")
+            | pp.CaselessKeyword("REAL8")
+            | pp.CaselessKeyword("SBYTE")
+            | pp.CaselessKeyword("SDWORD")
+            | pp.CaselessKeyword("SQWORD")
+            | pp.CaselessKeyword("SWORD")
+            | pp.CaselessKeyword("TBYTE")
+            | pp.CaselessKeyword("WORD")
+            | pp.CaselessKeyword("XMMWORD")
+            | pp.CaselessKeyword("YMMWORD")
+            | pp.CaselessKeyword("CS")
+            | pp.CaselessKeyword("DS")
+            | pp.CaselessKeyword("ES")
+            | pp.CaselessKeyword("FS")
+            | pp.CaselessKeyword("GS")
+            | pp.CaselessKeyword("SS")
+        )
+
         # Identifier.  Note that $ is not mentioned in the ASM386 Assembly Language Reference,
         # but it is mentioned in the MASM syntax
         first = pp.Word(pp.alphas + "$?@_", exact=1)
         rest = pp.Word(pp.alphanums + "$?@_")
         identifier = pp.Group(
-            pp.Combine(first + pp.Optional(rest)).setResultsName("name")
+            pp.NotAny(reserved_words)
+            + pp.Combine(first + pp.Optional(rest)).setResultsName("name")
         ).setResultsName("identifier")
 
         # Register.
@@ -224,7 +253,8 @@ class ParserX86Intel(BaseParser):
         # expression, multiple register expressions).  Let's ignore those for now, but see
         # https://stackoverflow.com/questions/71540754/why-sometimes-use-offset-flatlabel-and-sometimes-not.
         address_expression = pp.Group(
-            immediate + register_expression
+            self.register.setResultsName("segment") + pp.Literal(":") + immediate
+            ^ immediate + register_expression
             ^ register_expression
         ).setResultsName("address_expression")
 
@@ -523,10 +553,16 @@ class ParserX86Intel(BaseParser):
             self.process_register_expression(address_expression.register_expression)
             if "register_expression" in address_expression else None
         )
+        segment = (
+            self.process_register(address_expression.segment)
+            if "segment" in address_expression else None
+        )
         if register_expression:
             if immediate_operand:
                 register_expression.offset = immediate_operand
             return register_expression
+        elif segment:
+            return MemoryOperand(base=segment, offset=immediate_operand)
         else:
             return MemoryOperand(base=immediate_operand)
 
