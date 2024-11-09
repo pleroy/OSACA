@@ -147,8 +147,7 @@ class TestParserX86Intel(unittest.TestCase):
         self.assertEqual(parsed_8.operands[0],
                          MemoryOperand(
                              base=RegisterOperand(name="GS"),
-                             offset=ImmediateOperand(value=111))
-                         )
+                             offset=ImmediateOperand(value=111)))
         self.assertEqual(parsed_8.operands[1],
                          RegisterOperand(name="AL"))
 
