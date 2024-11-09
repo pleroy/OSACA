@@ -75,41 +75,12 @@ class ParserX86Intel(BaseParser):
             | pp.CaselessKeyword("YMMWORD")
         ).setResultsName("data_type")
 
-        # Reserved words, see ASM386 table C.2.  Only listing here those that are necessary to lift
-        # ambiguities.
-        reserved_words = (
-            pp.CaselessKeyword("BYTE")
-            | pp.CaselessKeyword("DWORD")
-            | pp.CaselessKeyword("FWORD")
-            | pp.CaselessKeyword("MMWORD")
-            | pp.CaselessKeyword("OWORD")
-            | pp.CaselessKeyword("QWORD")
-            | pp.CaselessKeyword("REAL10")
-            | pp.CaselessKeyword("REAL4")
-            | pp.CaselessKeyword("REAL8")
-            | pp.CaselessKeyword("SBYTE")
-            | pp.CaselessKeyword("SDWORD")
-            | pp.CaselessKeyword("SQWORD")
-            | pp.CaselessKeyword("SWORD")
-            | pp.CaselessKeyword("TBYTE")
-            | pp.CaselessKeyword("WORD")
-            | pp.CaselessKeyword("XMMWORD")
-            | pp.CaselessKeyword("YMMWORD")
-            | pp.CaselessKeyword("CS")
-            | pp.CaselessKeyword("DS")
-            | pp.CaselessKeyword("ES")
-            | pp.CaselessKeyword("FS")
-            | pp.CaselessKeyword("GS")
-            | pp.CaselessKeyword("SS")
-        )
-
         # Identifier.  Note that $ is not mentioned in the ASM386 Assembly Language Reference,
         # but it is mentioned in the MASM syntax
         first = pp.Word(pp.alphas + "$?@_", exact=1)
         rest = pp.Word(pp.alphanums + "$?@_")
         identifier = pp.Group(
-            pp.NotAny(reserved_words)
-            + pp.Combine(first + pp.Optional(rest)).setResultsName("name")
+            pp.Combine(first + pp.Optional(rest)).setResultsName("name")
         ).setResultsName("identifier")
 
         # Register.
