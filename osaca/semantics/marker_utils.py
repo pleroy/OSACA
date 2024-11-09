@@ -2,20 +2,21 @@
 from collections import OrderedDict
 
 from osaca.parser import ParserAArch64, ParserX86ATT, get_parser
-from osaca.parser.register import RegisterOperand
+from osaca.parser.instruction_form import InstructionForm
+from osaca.parser.directive import DirectiveOperand
 from osaca.parser.identifier import IdentifierOperand
 from osaca.parser.immediate import ImmediateOperand
+from osaca.parser.register import RegisterOperand
 
 COMMENT_MARKER = {"start": "OSACA-BEGIN", "end": "OSACA-END"}
 
 
-def reduce_to_section(kernel, isa, syntax):
+def reduce_to_section(kernel, parser):
     """
     Finds OSACA markers in given kernel and returns marked section
 
     :param list kernel: kernel to check
-    :param str isa: ISA of given kernel
-    :param str syntax: syntax of assembly file
+    :param BaseParser parser: parser used to produce the kernel
     :returns: `list` -- marked section of kernel as list of instruction forms
     """
     isa = isa.lower()
@@ -33,45 +34,6 @@ def reduce_to_section(kernel, isa, syntax):
     if end == -1:
         end = len(kernel)
     return kernel[start:end]
-
-
-def find_marked_kernel_AArch64(lines):
-    """
-    Find marked section for AArch64
-
-    :param list lines: kernel
-    :returns: `tuple of int` -- start and end line of marked section
-    """
-    nop_bytes = [213, 3, 32, 31]
-    return find_marked_section(
-        lines,
-        ParserAArch64(),
-        ["mov"],
-        "x1",
-        [111, 222],
-        nop_bytes,
-        reverse=True,
-        comments=COMMENT_MARKER,
-    )
-
-
-def find_marked_kernel_x86ATT(lines):
-    """
-    Find marked section for x86
-
-    :param list lines: kernel
-    :returns: `tuple of int` -- start and end line of marked section
-    """
-    nop_bytes = [100, 103, 144]
-    return find_marked_section(
-        lines,
-        ParserX86ATT(),
-        ["mov", "movl"],
-        "ebx",
-        [111, 222],
-        nop_bytes,
-        comments=COMMENT_MARKER,
-    )
 
 
 def get_marker(isa, syntax, comment=""):
@@ -115,25 +77,13 @@ def get_marker(isa, syntax, comment=""):
     return start_marker, end_marker
 
 
-def find_marked_section(
-    lines, parser, mov_instr, mov_reg, mov_vals, nop_bytes, reverse=False, comments=None
-):
+def find_marked_section(lines, parser, comments=None):
     """
     Return indexes of marked section
 
     :param list lines: kernel
     :param parser: parser to use for checking
     :type parser: :class:`~parser.BaseParser`
-    :param mov_instr: all MOV instruction possible for the marker
-    :type mov_instr: `list of str`
-    :param mov_reg: register used for the marker
-    :type mov_reg: `str`
-    :param mov_vals: values needed to be moved to ``mov_reg`` for valid marker
-    :type mov_vals: `list of int`
-    :param nop_bytes: bytes representing opcode of NOP
-    :type nop_bytes: `list of int`
-    :param reverse: indicating if ISA syntax requires reverse operand order, defaults to `False`
-    :type reverse: boolean, optional
     :param comments: dictionary with start and end markers in comment format, defaults to None
     :type comments: dict, optional
     :returns: `tuple of int` -- start and end line of marked section
@@ -148,41 +98,92 @@ def find_marked_section(
                     index_start = i + 1
                 elif comments["end"] == line.comment:
                     index_end = i
-            elif (
-                line.mnemonic in mov_instr
-                and len(lines) > i + 1
-                and lines[i + 1].directive is not None
-            ):
-                source = line.operands[0 if not reverse else 1]
-                destination = line.operands[1 if not reverse else 0]
-                # instruction pair matches, check for operands
-                if (
-                    isinstance(source, ImmediateOperand)
-                    and parser.normalize_imd(source) == mov_vals[0]
-                    and isinstance(destination, RegisterOperand)
-                    and parser.get_full_reg_name(destination) == mov_reg
-                ):
-                    # operands of first instruction match start, check for second one
-                    match, line_count = match_bytes(lines, i + 1, nop_bytes)
-                    if match:
-                        # return first line after the marker
-                        index_start = i + 1 + line_count
-                elif (
-                    isinstance(source, ImmediateOperand)
-                    and parser.normalize_imd(source) == mov_vals[1]
-                    and isinstance(destination, RegisterOperand)
-                    and parser.get_full_reg_name(destination) == mov_reg
-                ):
-                    # operand of first instruction match end, check for second one
-                    match, line_count = match_bytes(lines, i + 1, nop_bytes)
-                    if match:
-                        # return line of the marker
-                        index_end = i
+            elif index_start == -1:
+                start_marker = parser.start_marker()
+                if match_lines(lines, i, start_marker):
+                    # return first line after the marker
+                    index_start = i + 1 + len(start_marker)
+            else:
+                end_marker = parser.end_marker()
+                if match_lines(lines, i, end_marker):
+                    index_end = i
         except TypeError:
             print(i, line)
         if index_start != -1 and index_end != -1:
             break
     return index_start, index_end
+
+
+# This function and the following ones traverse the syntactic tree produced by the parser and try to
+# match it to the marker.  This is necessary because the IACA marker are significantly different on
+# MSVC x86 than on other ISA/compilers.  Therefore, simple string matching is not sufficient.  The
+# matching only checks for a limited number of properties (and the marker doesn't specify the rest).
+def match_lines(lines, index, marker):
+    marker_index = 0
+    for marker_index in range(len(marker)):
+        line = lines[index]
+        marker_line = marker[marker_index]
+        if isinstance(marker_line, list):
+            while True:
+                if match_line(line, marker_line):
+                    break
+            else:
+                return False
+        elif not match_line(line, marker_line):
+            return False
+        ++index
+    return True
+
+def match_line(line, marker_line):
+    if (
+        isinstance(line, InstructionForm)
+        and isinstance(marker_line, InstructionForm)
+        and line.mnemonic == marker_line.mnemonic
+        and match_operands(line.operands, marker_line.operands)
+    ):
+        return True
+    if (
+        isinstance(line, DirectiveOperand)
+        and isinstance(marker_line, InstructionForm)
+        and match_parameters(line.parameters, marker_line.parameters)
+    ):
+        return True
+    else:
+        return False
+
+def match_operands(line_operands, marker_line_operands):
+    if len(line_operands) != len(marker_line_operands):
+        return False
+    for i in range(len(line_operands)):
+        if not match_operand(line_operands[i], marker_line_operands[i]):
+            return False
+    return True
+
+def match_operand(line_operand, marker_line_operand):
+    if (
+        isinstance(line_operand, ImmediateOperand)
+        and isinstance(marker_line_operand, ImmediateOperand)
+        and line_operand.value == marker_line_operand.value
+    ):
+        return True
+    if (
+        isinstance(line_operand, RegisterOperand)
+        and isinstance(marker_line_operand, RegisterOperand)
+        and line_operand.name.lower() == marker_line_operand.name.lower()
+    ):
+        return True
+    return False
+
+def match_parameters(line_parameters, marker_line_parameters):
+    if len(line_parameters) != len(marker_line_parameters):
+        return False
+    for i in range(len(line_parameters)):
+        if not match_parameter(line_parameters[i], marker_line_parameters[i]):
+            return False
+    return True
+
+def match_parameter(line_parameter, marker_line_parameter):
+    return line_parameter.lower() == marker_line_parameter.lower()
 
 
 def match_bytes(lines, index, byte_list):

@@ -26,7 +26,27 @@ class ParserAArch64(BaseParser):
 
     def __init__(self):
         super().__init__()
-        self.isa = "aarch64"
+
+    def isa(self):
+        return "aarch64"
+
+    def start_marker(self):
+        return [
+            InstructionForm(
+                mnemonic="mov",
+                operands=[RegisterOperand(name="x1"), ImmediateOperand(value=111)]
+            ),
+            DirectiveOperand(name="byte", parameters=["213", "3", "32", "31"])
+        ]
+
+    def end_marker(self):
+        return [
+            InstructionForm(
+                mnemonic="mov",
+                operands=[RegisterOperand(name="x1"), ImmediateOperand(value=222)]
+            ),
+            DirectiveOperand(name="byte", parameters=["213", "3", "32", "31"])
+        ]
 
     def construct_parser(self):
         """Create parser for ARM AArch64 ISA."""

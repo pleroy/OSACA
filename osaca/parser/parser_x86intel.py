@@ -12,8 +12,9 @@ from osaca.parser.memory import MemoryOperand
 from osaca.parser.register import RegisterOperand
 
 # References:
-#   ASM386 Assembly Language Reference, document number 469165-003, https://mirror.math.princeton.edu/pub/oldlinux/Linux.old/Ref-docs/asm-ref.pdf
+#   ASM386 Assembly Language Reference, document number 469165-003, https://mirror.math.princeton.edu/pub/oldlinux/Linux.old/Ref-docs/asm-ref.pdf.
 #   Microsoft Macro Assembler BNF Grammar, https://learn.microsoft.com/en-us/cpp/assembler/masm/masm-bnf-grammar?view=msvc-170.
+#   Intel® Architecture Code Analyzer User's Guide, https://www.intel.com/content/dam/develop/external/us/en/documents/intel-architecture-code-analyzer-3-0-users-guide-157552.pdf.
 class ParserX86Intel(BaseParser):
     _instance = None
 
@@ -25,7 +26,33 @@ class ParserX86Intel(BaseParser):
 
     def __init__(self):
         super().__init__()
-        self.isa = "x86"
+
+    def isa(self):
+        return "x86"
+
+    # The IACA manual says: "For For Microsoft* Visual C++ compiler, 64-bit version, use
+    # IACA_VC64_START and IACA_VC64_END, instead" (of IACA_START and IACA_END).
+    def start_marker(self):
+        return [
+            InstructionForm(
+                mnemonic="mov",
+                operands=[RegisterOperand(name="al"), ImmediateOperand(value=111)]
+            ),
+            InstructionForm(
+                mnemonic="mov",
+                operands=[MemoryOperand(
+                    RegisterOperand(name="gs")), RegisterOperand(name="al")]
+            ),
+        ]
+
+    def end_marker(self):
+        return [
+            InstructionForm(
+                mnemonic="mov",
+                operands=[RegisterOperand(name="x1"), ImmediateOperand(value=222)]
+            ),
+            DirectiveOperand(name="byte", parameters=["213", "3", "32", "31"])
+        ]
 
     def construct_parser(self):
         """Create parser for x86 Intel ISA."""

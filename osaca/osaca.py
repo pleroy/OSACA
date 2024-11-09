@@ -373,7 +373,7 @@ def inspect(args, output_file=sys.stdout):
         kernel = [line for line in parsed_code if line.line_number in line_range]
         print_length_warning = False
     else:
-        kernel = reduce_to_section(parsed_code, isa, syntax)
+        kernel = reduce_to_section(parsed_code, parser)
         # Print warning if kernel has no markers and is larger than threshold (100)
         print_length_warning = (
             True if len(kernel) == len(parsed_code) and len(kernel) > 100 else False

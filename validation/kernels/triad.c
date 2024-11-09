@@ -23,11 +23,11 @@ void kernel(DTYPE* a, DTYPE* b, DTYPE* c, const DTYPE s, const int repeat, const
     for(int r=0; r < repeat; r++) {
         for(int i=0; i<cur_elements; i++) {
 #if USE_IACA
-            IACA_VC64_START;
+            IACA_VC64_START
 #endif
             a[i] = b[i] + s * c[i];
 #if USE_IACA
-            IACA_VC64_END;
+            IACA_VC64_END
 #endif
         }
         dummy((void*)a);
