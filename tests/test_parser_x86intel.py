@@ -23,6 +23,8 @@ class TestParserX86Intel(unittest.TestCase):
         self.parser = ParserX86Intel()
         with open(self._find_file("triad_x86_intel.asm")) as f:
             self.triad_code = f.read()
+        with open(self._find_file("triad_x86_intel_iaca.asm")) as f:
+            self.triad_iaca_code = f.read()
 
     ##################
     # Test
@@ -86,6 +88,7 @@ class TestParserX86Intel(unittest.TestCase):
         instr5 = "\tmov\tQWORD PTR [rsp+24], r8"
         instr6 = "\tjmp\tSHORT $LN2@kernel"
         instr7 = "\tlea\trcx, OFFSET FLAT:__FAC6D534_triad@c"
+        instr8 = "\tmov\tBYTE PTR gs:111, al"
 
         parsed_1 = self.parser.parse_instruction(instr1)
         parsed_2 = self.parser.parse_instruction(instr2)
@@ -94,6 +97,7 @@ class TestParserX86Intel(unittest.TestCase):
         parsed_5 = self.parser.parse_instruction(instr5)
         parsed_6 = self.parser.parse_instruction(instr6)
         parsed_7 = self.parser.parse_instruction(instr7)
+        parsed_8 = self.parser.parse_instruction(instr8)
 
         self.assertEqual(parsed_1.mnemonic, "sub")
         self.assertEqual(parsed_1.operands[0],
@@ -138,6 +142,14 @@ class TestParserX86Intel(unittest.TestCase):
                          RegisterOperand(name="RCX"))
         self.assertEqual(parsed_7.operands[1],
                          MemoryOperand(base=IdentifierOperand(name="__FAC6D534_triad@c")))
+
+        self.assertEqual(parsed_8.mnemonic, "mov")
+        self.assertEqual(parsed_8.operands[0],
+                         MemoryOperand(
+                             base=RegisterOperand(name="GS"),
+                             offset=ImmediateOperand(value=111)))
+        self.assertEqual(parsed_8.operands[1],
+                         RegisterOperand(name="AL"))
 
     def test_parse_line(self):
         line_comment = "; -- Begin  main"
@@ -186,7 +198,7 @@ class TestParserX86Intel(unittest.TestCase):
         self.assertEqual(self.parser.parse_register(register_str_3), parsed_reg_3)
         self.assertEqual(self.parser.parse_register(register_str_4), parsed_reg_4)
 
-    def test_parse_file(self):
+    def test_parse_file1(self):
         parsed = self.parser.parse_file(self.triad_code)
         self.assertEqual(parsed[0].line_number, 1)
         # Check a few lines to make sure that we produced something reasonable.
@@ -202,6 +214,21 @@ class TestParserX86Intel(unittest.TestCase):
                                          line="END",
                                          line_number=124))
         self.assertEqual(len(parsed), 121)
+
+    def test_parse_file2(self):
+        parsed = self.parser.parse_file(self.triad_iaca_code)
+        self.assertEqual(parsed[0].line_number, 1)
+        # Check a few lines to make sure that we produced something reasonable.
+        self.assertEqual(parsed[76],
+                         InstructionForm(directive_id=DirectiveOperand(name="=",
+                                                                       parameters=["c$", "304"]),
+                                         line="c$ = 304",
+                                         line_number=80))
+        self.assertEqual(parsed[153],
+                         InstructionForm(directive_id=DirectiveOperand(name="END"),
+                                         line="END",
+                                         line_number=157))
+        self.assertEqual(len(parsed), 154)
 
     def test_normalize_imd(self):
         imd_binary = ImmediateOperand(value="1001111B")
