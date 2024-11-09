@@ -216,22 +216,20 @@ class TestParserX86Intel(unittest.TestCase):
                                          line_number=124))
         self.assertEqual(len(parsed), 121)
 
-    # def test_parse_file2(self):
-    #     parsed = self.parser.parse_file(self.triad_iaca_code)
-    #     self.assertEqual(parsed[0].line_number, 1)
-    #     # Check a few lines to make sure that we produced something reasonable.
-    #     self.assertEqual(parsed[60],
-    #                      InstructionForm(mnemonic="mov",
-    #                                      operands=[MemoryOperand(base=RegisterOperand("RSP"),
-    #                                                              offset=ImmediateOperand(value=8)),
-    #                                                RegisterOperand(name="RCX")],
-    #                                      line="\tmov\tQWORD PTR [rsp+8], rcx",
-    #                                      line_number=64))
-    #     self.assertEqual(parsed[120],
-    #                      InstructionForm(directive_id=DirectiveOperand(name="END"),
-    #                                      line="END",
-    #                                      line_number=124))
-    #     self.assertEqual(len(parsed), 121)
+    def test_parse_file2(self):
+        parsed = self.parser.parse_file(self.triad_iaca_code)
+        self.assertEqual(parsed[0].line_number, 1)
+        # Check a few lines to make sure that we produced something reasonable.
+        self.assertEqual(parsed[76],
+                         InstructionForm(directive_id=DirectiveOperand(name="=",
+                                                                       parameters=["c$", "304"]),
+                                         line="c$ = 304",
+                                         line_number=80))
+        self.assertEqual(parsed[153],
+                         InstructionForm(directive_id=DirectiveOperand(name="END"),
+                                         line="END",
+                                         line_number=157))
+        self.assertEqual(len(parsed), 154)
 
     def test_normalize_imd(self):
         imd_binary = ImmediateOperand(value="1001111B")
