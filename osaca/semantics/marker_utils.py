@@ -247,24 +247,6 @@ def match_parameter(line_parameter, marker_line_parameter):
     return line_parameter.lower() == marker_line_parameter.lower()
 
 
-def match_bytes(lines, index, byte_list):
-    """Match bytes directives of markers"""
-    # either all bytes are in one line or in separate ones
-    extracted_bytes = []
-    line_count = 0
-    while (
-        index < len(lines)
-        and lines[index].directive is not None
-        and lines[index].directive.name == "byte"
-    ):
-        line_count += 1
-        extracted_bytes += [int(x, 0) for x in lines[index].directive.parameters]
-        index += 1
-    if extracted_bytes[0 : len(byte_list)] == byte_list:
-        return True, line_count
-    return False, -1
-
-
 def find_jump_labels(lines):
     """
     Find and return all labels which are followed by instructions until the next label
