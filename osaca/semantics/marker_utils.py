@@ -8,6 +8,7 @@ from osaca.parser.instruction_form import InstructionForm
 from osaca.parser.directive import DirectiveOperand
 from osaca.parser.identifier import IdentifierOperand
 from osaca.parser.immediate import ImmediateOperand
+from osaca.parser.memory import MemoryOperand
 from osaca.parser.register import RegisterOperand
 
 COMMENT_MARKER = {"start": "OSACA-BEGIN", "end": "OSACA-END"}
@@ -203,6 +204,13 @@ def match_operand(line_operand, marker_line_operand):
         and isinstance(marker_line_operand, RegisterOperand)
         and line_operand.name.lower() == marker_line_operand.name.lower()
     ):
+        return True
+    if (
+        isinstance(line_operand, MemoryOperand)
+        and isinstance(marker_line_operand, MemoryOperand)
+        and match_operand(line_operand.base, marker_line_operand.base)
+        and match_operand(line_operand.offset, line_operand.offset)
+        ):
         return True
     return False
 

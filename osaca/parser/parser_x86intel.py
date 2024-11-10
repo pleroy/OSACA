@@ -36,12 +36,17 @@ class ParserX86Intel(BaseParser):
         return [
             InstructionForm(
                 mnemonic="mov",
-                operands=[RegisterOperand(name="al"), ImmediateOperand(value=111)]
+                operands=[RegisterOperand(name="AL"), ImmediateOperand(value=111)]
             ),
             InstructionForm(
                 mnemonic="mov",
-                operands=[MemoryOperand(
-                    RegisterOperand(name="gs")), RegisterOperand(name="al")]
+                operands=[
+                    MemoryOperand(
+                        base=RegisterOperand(name="GS"),
+                        offset=ImmediateOperand(value=111)
+                    ),
+                    RegisterOperand(name="AL")
+                ]
             ),
         ]
 
@@ -49,9 +54,18 @@ class ParserX86Intel(BaseParser):
         return [
             InstructionForm(
                 mnemonic="mov",
-                operands=[RegisterOperand(name="x1"), ImmediateOperand(value=222)]
+                operands=[RegisterOperand(name="AL"), ImmediateOperand(value=222)]
             ),
-            DirectiveOperand(name="byte", parameters=["213", "3", "32", "31"])
+            InstructionForm(
+                mnemonic="mov",
+                operands=[
+                    MemoryOperand(
+                        base=RegisterOperand(name="GS"),
+                        offset=ImmediateOperand(value=222)
+                    ),
+                    RegisterOperand(name="AL")
+                ]
+            ),
         ]
 
     def construct_parser(self):
