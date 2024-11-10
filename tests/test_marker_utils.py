@@ -108,7 +108,7 @@ class TestMarkerUtils(unittest.TestCase):
                             bytes_end=bytes_var_2,
                         ):
                             sample_parsed = self.parser_AArch.parse_file(sample_code)
-                            sample_kernel = reduce_to_section(sample_parsed, "AArch64", None)
+                            sample_kernel = reduce_to_section(sample_parsed, ParserAArch64())
                             self.assertEqual(len(sample_kernel), kernel_length)
                             kernel_start = len(
                                 list(
