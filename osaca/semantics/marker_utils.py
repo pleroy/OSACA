@@ -96,13 +96,13 @@ def find_marked_section(lines, parser, comments=None):
                     index_start = i + 1
                 elif comments["end"] == line.comment:
                     index_end = i
-            elif index_start == -1:
+            if index_start == -1:
                 start_marker = parser.start_marker()
                 matches, length = match_lines(parser, lines, i, start_marker)
                 if matches:
                     # return first line after the marker
                     index_start = i + length
-            else:
+            if index_end == -1:
                 end_marker = parser.end_marker()
                 matches, length = match_lines(parser, lines, i, end_marker)
                 if matches:

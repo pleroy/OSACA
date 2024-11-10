@@ -180,7 +180,7 @@ class TestMarkerUtils(unittest.TestCase):
                             bytes_end=bytes_var_2,
                         ):
                             sample_parsed = self.parser_x86.parse_file(sample_code)
-                            sample_kernel = reduce_to_section(sample_parsed, "x86", "ATT")
+                            sample_kernel = reduce_to_section(sample_parsed, ParserX86ATT())
                             self.assertEqual(len(sample_kernel), kernel_length)
                             kernel_start = len(
                                 list(
@@ -222,7 +222,7 @@ class TestMarkerUtils(unittest.TestCase):
         for test_name, pro, kernel, epi in samples:
             code = pro + kernel + epi
             parsed = self.parser_AArch.parse_file(code)
-            test_kernel = reduce_to_section(parsed, "AArch64", None)
+            test_kernel = reduce_to_section(parsed, ParserAArch64())
             if kernel:
                 kernel_length = len(kernel.strip().split("\n"))
             else:
@@ -230,7 +230,7 @@ class TestMarkerUtils(unittest.TestCase):
             self.assertEqual(
                 len(test_kernel),
                 kernel_length,
-                msg="Invalid exctracted kernel length on {!r} sample".format(test_name),
+                msg="Invalid extracted kernel length on {!r} sample".format(test_name),
             )
             if pro:
                 kernel_start = len((pro).strip().split("\n"))
@@ -240,7 +240,7 @@ class TestMarkerUtils(unittest.TestCase):
             self.assertEqual(
                 test_kernel,
                 parsed_kernel,
-                msg="Invalid exctracted kernel on {!r}".format(test_name),
+                msg="Invalid extracted kernel on {!r}".format(test_name),
             )
 
     def test_marker_special_cases_x86(self):
@@ -270,7 +270,7 @@ class TestMarkerUtils(unittest.TestCase):
         for test_name, pro, kernel, epi in samples:
             code = pro + kernel + epi
             parsed = self.parser_x86.parse_file(code)
-            test_kernel = reduce_to_section(parsed, "x86", "ATT")
+            test_kernel = reduce_to_section(parsed, ParserX86ATT())
             if kernel:
                 kernel_length = len(kernel.strip().split("\n"))
             else:
@@ -278,7 +278,7 @@ class TestMarkerUtils(unittest.TestCase):
             self.assertEqual(
                 len(test_kernel),
                 kernel_length,
-                msg="Invalid exctracted kernel length on {!r} sample".format(test_name),
+                msg="Invalid extracted kernel length on {!r} sample".format(test_name),
             )
             if pro:
                 kernel_start = len((pro).strip().split("\n"))
@@ -289,7 +289,7 @@ class TestMarkerUtils(unittest.TestCase):
             self.assertEqual(
                 test_kernel,
                 parsed_kernel,
-                msg="Invalid exctracted kernel on {!r}".format(test_name),
+                msg="Invalid extracted kernel on {!r}".format(test_name),
             )
 
     def test_find_jump_labels(self):
