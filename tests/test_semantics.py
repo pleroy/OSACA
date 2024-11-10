@@ -135,7 +135,7 @@ class TestSemanticTools(unittest.TestCase):
     def test_creation_by_name(self):
         try:
             tmp_mm = MachineModel(arch="CSX")
-            ArchSemantics(tmp_mm)
+            ArchSemantics(self.parser_x86_att, tmp_mm)
         except ValueError:
             self.fail()
 
@@ -320,7 +320,7 @@ class TestSemanticTools(unittest.TestCase):
         self.assertTrue(max(tp_optimal) <= max(tp_fixed))
         # test multiple port assignment options
         test_mm_x86 = MachineModel(path_to_yaml=self._find_file("test_db_x86.yml"))
-        tmp_semantics = ArchSemantics(test_mm_x86)
+        tmp_semantics = ArchSemantics(self.parser_x86_att, test_mm_x86)
         tmp_code_1 = "fantasyinstr1 %rax, %rax\n"
         tmp_code_2 = "fantasyinstr1 %rax, %rax\nfantasyinstr2 %rbx, %rbx\n"
         tmp_kernel_1 = self.parser_x86_att.parse_file(tmp_code_1)

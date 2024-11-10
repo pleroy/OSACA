@@ -87,11 +87,11 @@ class ISASemantics(object):
 
         if assign_default:
             # no irregular operand structure, apply default
-            op_dict["source"] = self._get_regular_source_operands(instruction_form)
-            op_dict["destination"] = self._get_regular_destination_operands(instruction_form)
+            op_dict["source"] = self._parser.get_regular_source_operands(instruction_form)
+            op_dict["destination"] = self._parser.get_regular_destination_operands(instruction_form)
             op_dict["src_dst"] = []
         # post-process pre- and post-indexing for aarch64 memory operands
-        if self._isa == "aarch64":
+        if self._parser.isa() == "aarch64":
             for operand in [op for op in op_dict["source"] if isinstance(op, MemoryOperand)]:
                 post_indexed = operand.post_indexed
                 pre_indexed = operand.pre_indexed
@@ -282,33 +282,6 @@ class ISASemantics(object):
             if isinstance(operand, MemoryOperand):
                 return True
         return False
-
-    def _get_regular_source_operands(self, instruction_form):
-        """Get source operand of given instruction form assuming regular src/dst behavior."""
-        # if there is only one operand, assume it is a source operand
-        if len(instruction_form.operands) == 1:
-            return [instruction_form.operands[0]]
-        if self._isa == "x86":
-            # return all but last operand
-            return [op for op in instruction_form.operands[0:-1]]
-        elif self._isa == "aarch64":
-            return [op for op in instruction_form.operands[1:]]
-        else:
-            raise ValueError("Unsupported ISA {}.".format(self._isa))
-
-    def _get_regular_destination_operands(self, instruction_form):
-        """Get destination operand of given instruction form assuming regular src/dst behavior."""
-        # if there is only one operand, assume no destination
-        if len(instruction_form.operands) == 1:
-            return []
-        if self._isa == "x86":
-            # return last operand
-            return instruction_form.operands[-1:]
-        if self._isa == "aarch64":
-            # return first operand
-            return instruction_form.operands[:1]
-        else:
-            raise ValueError("Unsupported ISA {}.".format(self._isa))
 
     def substitute_mem_address(self, operands):
         """Create memory wildcard for all memory operands"""
