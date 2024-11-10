@@ -224,7 +224,8 @@ class ParserX86Intel(BaseParser):
         # expression, multiple register expressions).  Let's ignore those for now, but see
         # https://stackoverflow.com/questions/71540754/why-sometimes-use-offset-flatlabel-and-sometimes-not.
         address_expression = pp.Group(
-            immediate + register_expression
+            self.register.setResultsName("segment") + pp.Literal(":") + immediate
+            ^ immediate + register_expression
             ^ register_expression
         ).setResultsName("address_expression")
 
@@ -523,10 +524,16 @@ class ParserX86Intel(BaseParser):
             self.process_register_expression(address_expression.register_expression)
             if "register_expression" in address_expression else None
         )
+        segment = (
+            self.process_register(address_expression.segment)
+            if "segment" in address_expression else None
+        )
         if register_expression:
             if immediate_operand:
                 register_expression.offset = immediate_operand
             return register_expression
+        elif segment:
+            return MemoryOperand(base=segment, offset=immediate_operand)
         else:
             return MemoryOperand(base=immediate_operand)
 
