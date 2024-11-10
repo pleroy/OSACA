@@ -32,13 +32,13 @@ class TestMarkerUtils(unittest.TestCase):
     #################
 
     def test_marker_detection_AArch64(self):
-        kernel = reduce_to_section(self.parsed_AArch, "AArch64", None)
+        kernel = reduce_to_section(self.parsed_AArch, ParserAArch64())
         self.assertEqual(len(kernel), 138)
         self.assertEqual(kernel[0].line_number, 307)
         self.assertEqual(kernel[-1].line_number, 444)
 
     def test_marker_detection_x86(self):
-        kernel = reduce_to_section(self.parsed_x86, "x86", "ATT")
+        kernel = reduce_to_section(self.parsed_x86, ParserX86ATT())
         self.assertEqual(len(kernel), 9)
         self.assertEqual(kernel[0].line_number, 146)
         self.assertEqual(kernel[-1].line_number, 154)

@@ -32,7 +32,7 @@ class ParserX86ATT(BaseParser):
 
     def start_marker(self):
         return [
-            [
+            {
                 InstructionForm(
                     mnemonic="mov",
                     operands=[ImmediateOperand(value=111), RegisterOperand(name="ebx")]
@@ -41,8 +41,10 @@ class ParserX86ATT(BaseParser):
                      mnemonic="movl",
                      operands=[ImmediateOperand(value=111), RegisterOperand(name="ebx")]
                  )
-            ],
-            DirectiveOperand(name="byte", parameters=["100", "103", "144"])
+            },
+            InstructionForm(
+                directive_id=DirectiveOperand(name="byte", parameters=["100", "103", "144"])
+            )
         ]
 
     def end_marker(self):
@@ -57,7 +59,9 @@ class ParserX86ATT(BaseParser):
                      operands=[ImmediateOperand(value=222), RegisterOperand(name="ebx")]
                  )
             ],
-            DirectiveOperand(name="byte", parameters=["100", "103", "144"])
+            InstructionForm(
+                directive_id=DirectiveOperand(name="byte", parameters=["100", "103", "144"])
+            )
         ]
 
     def construct_parser(self):

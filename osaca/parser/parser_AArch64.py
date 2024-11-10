@@ -34,18 +34,22 @@ class ParserAArch64(BaseParser):
         return [
             InstructionForm(
                 mnemonic="mov",
-                operands=[RegisterOperand(name="x1"), ImmediateOperand(value=111)]
+                operands=[RegisterOperand(name="1", prefix="x"), ImmediateOperand(value=111)]
             ),
-            DirectiveOperand(name="byte", parameters=["213", "3", "32", "31"])
+            InstructionForm(
+                directive_id=DirectiveOperand(name="byte", parameters=["213", "3", "32", "31"])
+            )
         ]
 
     def end_marker(self):
         return [
             InstructionForm(
                 mnemonic="mov",
-                operands=[RegisterOperand(name="x1"), ImmediateOperand(value=222)]
+                operands=[RegisterOperand(name="1", prefix="x"), ImmediateOperand(value=222)]
             ),
-            DirectiveOperand(name="byte", parameters=["213", "3", "32", "31"])
+            InstructionForm(
+                directive_id=DirectiveOperand(name="byte", parameters=["213", "3", "32", "31"])
+            )
         ]
 
     def construct_parser(self):

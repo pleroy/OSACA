@@ -19,16 +19,7 @@ def reduce_to_section(kernel, parser):
     :param BaseParser parser: parser used to produce the kernel
     :returns: `list` -- marked section of kernel as list of instruction forms
     """
-    isa = isa.lower()
-    if isa == "x86":
-        if syntax == "ATT":
-            start, end = find_marked_kernel_x86ATT(kernel)
-        elif syntax == "INTEL":
-            raise NotImplementedError
-    elif isa == "aarch64":
-        start, end = find_marked_kernel_AArch64(kernel)
-    else:
-        raise ValueError("ISA not supported.")
+    start, end = find_marked_section(kernel, parser, COMMENT_MARKER)
     if start == -1:
         start = 0
     if end == -1:
@@ -102,7 +93,7 @@ def find_marked_section(lines, parser, comments=None):
                 start_marker = parser.start_marker()
                 if match_lines(lines, i, start_marker):
                     # return first line after the marker
-                    index_start = i + 1 + len(start_marker)
+                    index_start = i + len(start_marker)
             else:
                 end_marker = parser.end_marker()
                 if match_lines(lines, i, end_marker):
@@ -123,7 +114,7 @@ def match_lines(lines, index, marker):
     for marker_index in range(len(marker)):
         line = lines[index]
         marker_line = marker[marker_index]
-        if isinstance(marker_line, list):
+        if isinstance(marker_line, set):
             while True:
                 if match_line(line, marker_line):
                     break
@@ -131,7 +122,7 @@ def match_lines(lines, index, marker):
                 return False
         elif not match_line(line, marker_line):
             return False
-        ++index
+        index += 1
     return True
 
 def match_line(line, marker_line):
@@ -144,7 +135,8 @@ def match_line(line, marker_line):
         return True
     if (
         isinstance(line, DirectiveOperand)
-        and isinstance(marker_line, InstructionForm)
+        and isinstance(marker_line, DirectiveOperand)
+        and line.directive_id.name == marker_line.directive_id.name
         and match_parameters(line.parameters, marker_line.parameters)
     ):
         return True
