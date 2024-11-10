@@ -104,10 +104,11 @@ def find_marked_section(lines, parser, comments=None):
                     index_start = i + length
             else:
                 end_marker = parser.end_marker()
-                if match_lines(lines, i, end_marker):
+                matches, length = match_lines(lines, i, end_marker)
+                if matches:
                     index_end = i
-        except TypeError:
-            print(i, line)
+        except TypeError as e:
+            print(i, e, line)
         if index_start != -1 and index_end != -1:
             break
     return index_start, index_end
@@ -139,12 +140,12 @@ def match_lines(lines, index, marker):
                 if matching == Matching.Full:
                     break
             else:
-                return False,
+                return False, None
             marker_index += 1
         else:
             matching = match_line(line, marker_line)
             if matching == Matching.No:
-                return False,
+                return False, None
             elif matching == Matching.Partial:
                 # Try the same marker line again.  The call to `match_line` consumed some of the
                 # directive parameters.
@@ -165,18 +166,18 @@ def match_line(line, marker_line):
                        matching the next line in the parsed assembly code.
     """
     if (
-        isinstance(line, InstructionForm)
-        and isinstance(marker_line, InstructionForm)
+        line.mnemonic
+        and marker_line.mnemonic
         and line.mnemonic == marker_line.mnemonic
         and match_operands(line.operands, marker_line.operands)
     ):
         return Matching.Full
     if (
-        isinstance(line, DirectiveOperand)
-        and isinstance(marker_line, DirectiveOperand)
-        and line.directive_id.name == marker_line.directive_id.name
+        line.directive
+        and marker_line.directive
+        and line.directive.name == marker_line.directive.name
     ):
-        return match_parameters(line.parameters, marker_line.parameters)
+        return match_parameters(line.directive.parameters, marker_line.directive.parameters)
     else:
         return Matching.No
 
@@ -216,7 +217,7 @@ def match_parameters(line_parameters, marker_line_parameters):
     marker_line_parameter_count = len(marker_line_parameters)
 
     # The elements of `marker_line_parameters` are consumed as they are matched.
-    for i in range(min(line_parameter_count, marker_line_parameters)):
+    for i in range(min(line_parameter_count, marker_line_parameter_count)):
         if not match_parameter(line_parameters[i], marker_line_parameters[0]):
             return Matching.No
         marker_line_parameters.pop(0)
