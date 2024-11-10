@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 from collections import OrderedDict
+from enum import Enum
+from functools import partial
 
 from osaca.parser import ParserAArch64, ParserX86ATT, get_parser
 from osaca.parser.instruction_form import InstructionForm
@@ -9,6 +11,11 @@ from osaca.parser.immediate import ImmediateOperand
 from osaca.parser.register import RegisterOperand
 
 COMMENT_MARKER = {"start": "OSACA-BEGIN", "end": "OSACA-END"}
+
+class Matching(Enum):
+    No = 0
+    Partial = 1
+    Full = 2
 
 
 def reduce_to_section(kernel, parser):
@@ -91,9 +98,10 @@ def find_marked_section(lines, parser, comments=None):
                     index_end = i
             elif index_start == -1:
                 start_marker = parser.start_marker()
-                if match_lines(lines, i, start_marker):
+                matches, length = match_lines(lines, i, start_marker)
+                if matches:
                     # return first line after the marker
-                    index_start = i + len(start_marker)
+                    index_start = i + length
             else:
                 end_marker = parser.end_marker()
                 if match_lines(lines, i, end_marker):
@@ -110,38 +118,67 @@ def find_marked_section(lines, parser, comments=None):
 # MSVC x86 than on other ISA/compilers.  Therefore, simple string matching is not sufficient.  The
 # matching only checks for a limited number of properties (and the marker doesn't specify the rest).
 def match_lines(lines, index, marker):
+    """
+    Returns True iff the lines starting at `index` match the `marker`.
+
+    :param list of `IntructionForm` lines: parsed assembly code.
+    :param index: first line to try to match in `lines`.
+    :param list of `InstructioForm` marker: pattern to match against the `lines`.
+    :return: tuple bool, int: whether a match was found and the length of the match in the parsed
+                              code.
+    """
+    length = 0
     marker_index = 0
-    for marker_index in range(len(marker)):
-        line = lines[index]
+    while marker_index < len(marker):
+        line = lines[index + length]
         marker_line = marker[marker_index]
-        if isinstance(marker_line, set):
-            while True:
-                if match_line(line, marker_line):
+        if isinstance(marker_line, list):
+            # No support for partial matching in lists.
+            for i in range(len(marker_line)):
+                matching = match_line(line, marker_line[i])
+                if matching == Matching.Full:
                     break
             else:
-                return False
-        elif not match_line(line, marker_line):
-            return False
-        index += 1
-    return True
+                return False,
+            marker_index += 1
+        else:
+            matching = match_line(line, marker_line)
+            if matching == Matching.No:
+                return False,
+            elif matching == Matching.Partial:
+                # Try the same marker line again.  The call to `match_line` consumed some of the
+                # directive parameters.
+                pass
+            elif matching == Matching.Full:
+                # Move to the next marker line, the current one has been fully matched.
+                marker_index += 1
+        length += 1
+    return True, length
 
 def match_line(line, marker_line):
+    """
+    Returns whether `line` matches `marker_line`.
+
+    :param `IntructionForm` line: parsed assembly code.
+    :param marker_line `InstructioForm` marker: pattern to match against `line`.
+    :return: Matching. In case of partial match, `marker_line` is modified and should be reused for
+                       matching the next line in the parsed assembly code.
+    """
     if (
         isinstance(line, InstructionForm)
         and isinstance(marker_line, InstructionForm)
         and line.mnemonic == marker_line.mnemonic
         and match_operands(line.operands, marker_line.operands)
     ):
-        return True
+        return Matching.Full
     if (
         isinstance(line, DirectiveOperand)
         and isinstance(marker_line, DirectiveOperand)
         and line.directive_id.name == marker_line.directive_id.name
-        and match_parameters(line.parameters, marker_line.parameters)
     ):
-        return True
+        return match_parameters(line.parameters, marker_line.parameters)
     else:
-        return False
+        return Matching.No
 
 def match_operands(line_operands, marker_line_operands):
     if len(line_operands) != len(marker_line_operands):
@@ -167,12 +204,26 @@ def match_operand(line_operand, marker_line_operand):
     return False
 
 def match_parameters(line_parameters, marker_line_parameters):
-    if len(line_parameters) != len(marker_line_parameters):
-        return False
-    for i in range(len(line_parameters)):
-        if not match_parameter(line_parameters[i], marker_line_parameters[i]):
-            return False
-    return True
+    """
+    Returns whether `line_parameters` matches `marker_line_parameters`.
+
+    :param list of strings line_parameters: parameters of a directive in the parsed assembly code.
+    :param list of strings marker_line_parameters: parameters of a directive in the marker.
+    :return: Matching. In case of partial match, `marker_line_parameters` is modified and should be
+                       reused for matching the next line in the parsed assembly code.
+    """
+    line_parameter_count = len(line_parameters)
+    marker_line_parameter_count = len(marker_line_parameters)
+
+    # The elements of `marker_line_parameters` are consumed as they are matched.
+    for i in range(min(line_parameter_count, marker_line_parameters)):
+        if not match_parameter(line_parameters[i], marker_line_parameters[0]):
+            return Matching.No
+        marker_line_parameters.pop(0)
+    if len(marker_line_parameters) == 0:
+        return Matching.Full
+    else:
+        return Matching.Partial
 
 def match_parameter(line_parameter, marker_line_parameter):
     return line_parameter.lower() == marker_line_parameter.lower()
