@@ -630,6 +630,19 @@ class ParserAArch64(BaseParser):
         # identifier
         return imd
 
+    def normalize_mnemonic(self, mnemonic):
+        """
+        Normalize a mnemonic by dropping the suffix.
+
+        :param str mnemonic
+        :return str
+        """
+        if "." in mnemonic:
+            # Check for instruction without shape/cc suffix.
+            suffix_start = mnemonic.index(".")
+            return mnemonic[:suffix_start]
+        return mnemonic
+
     def ieee_to_float(self, ieee_val):
         """Convert IEEE representation to python float"""
         exponent = int(ieee_val["exponent"], 10)

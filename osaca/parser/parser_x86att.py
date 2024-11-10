@@ -17,6 +17,7 @@ from osaca.parser.immediate import ImmediateOperand
 
 class ParserX86ATT(BaseParser):
     _instance = None
+    GAS_SUFFIXES = "bswlqt"
 
     # Singelton pattern, as this is created very many times
     def __new__(cls):
@@ -429,6 +430,18 @@ class ParserX86ATT(BaseParser):
                 return imd.value
         # identifier
         return imd
+
+    def normalize_mnemonic(self, mnemonic):
+        """
+        Normalize a mnemonic by dropping the suffix.
+
+        :param str mnemonic
+        :return str
+        """
+        # Check for instruction without GAS suffix.
+        if mnemonic[-1] in self.GAS_SUFFIXES:
+            return mnemonic[:-1]
+        return mnemonic
 
     def is_flag_dependend_of(self, flag_a, flag_b):
         """Check if ``flag_a`` is dependent on ``flag_b``"""

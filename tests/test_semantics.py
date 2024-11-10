@@ -32,7 +32,7 @@ class TestSemanticTools(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         # set up parser and kernels
-        cls.parser_x86 = ParserX86ATT()
+        cls.parser_x86_att = ParserX86ATT()
         cls.parser_AArch64 = ParserAArch64()
         with open(cls._find_file("kernel_x86.s")) as f:
             cls.code_x86 = f.read()
@@ -48,24 +48,33 @@ class TestSemanticTools(unittest.TestCase):
             cls.code_AArch64_SVE = f.read()
         with open(cls._find_file("kernel_aarch64_deps.s")) as f:
             cls.code_AArch64_deps = f.read()
-        cls.kernel_x86 = reduce_to_section(cls.parser_x86.parse_file(cls.code_x86), "x86")
+        cls.kernel_x86 = reduce_to_section(
+            cls.parser_x86_att.parse_file(cls.code_x86),
+            cls.parser_x86_att
+        )
         cls.kernel_x86_memdep = reduce_to_section(
-            cls.parser_x86.parse_file(cls.code_x86_memdep), "x86"
+            cls.parser_x86_att.parse_file(cls.code_x86_memdep),
+            cls.parser_x86_att
         )
         cls.kernel_x86_long_LCD = reduce_to_section(
-            cls.parser_x86.parse_file(cls.code_x86_long_LCD), "x86"
+            cls.parser_x86_att.parse_file(cls.code_x86_long_LCD),
+            cls.parser_x86_att
         )
         cls.kernel_AArch64 = reduce_to_section(
-            cls.parser_AArch64.parse_file(cls.code_AArch64), "aarch64"
+            cls.parser_AArch64.parse_file(cls.code_AArch64),
+            cls.parser_AArch64
         )
         cls.kernel_aarch64_memdep = reduce_to_section(
-            cls.parser_AArch64.parse_file(cls.code_aarch64_memdep), "aarch64"
+            cls.parser_AArch64.parse_file(cls.code_aarch64_memdep),
+            cls.parser_AArch64
         )
         cls.kernel_aarch64_SVE = reduce_to_section(
-            cls.parser_AArch64.parse_file(cls.code_AArch64_SVE), "aarch64"
+            cls.parser_AArch64.parse_file(cls.code_AArch64_SVE),
+            cls.parser_AArch64
         )
         cls.kernel_aarch64_deps = reduce_to_section(
-            cls.parser_AArch64.parse_file(cls.code_AArch64_deps), "aarch64"
+            cls.parser_AArch64.parse_file(cls.code_AArch64_deps),
+            cls.parser_AArch64
         )
 
         # set up machine models
@@ -78,17 +87,20 @@ class TestSemanticTools(unittest.TestCase):
         cls.machine_model_a64fx = MachineModel(
             path_to_yaml=os.path.join(cls.MODULE_DATA_DIR, "a64fx.yml")
         )
-        cls.semantics_x86 = ISASemantics("x86")
+        cls.semantics_x86 = ISASemantics(cls.parser_x86_att)
         cls.semantics_csx = ArchSemantics(
+            cls.parser_x86_att,
             cls.machine_model_csx,
             path_to_yaml=os.path.join(cls.MODULE_DATA_DIR, "isa/x86.yml"),
         )
-        cls.semantics_aarch64 = ISASemantics("aarch64")
+        cls.semantics_aarch64 = ISASemantics(cls.parser_AArch64)
         cls.semantics_tx2 = ArchSemantics(
+            cls.parser_AArch64,
             cls.machine_model_tx2,
             path_to_yaml=os.path.join(cls.MODULE_DATA_DIR, "isa/aarch64.yml"),
         )
         cls.semantics_a64fx = ArchSemantics(
+            cls.parser_AArch64,
             cls.machine_model_a64fx,
             path_to_yaml=os.path.join(cls.MODULE_DATA_DIR, "isa/aarch64.yml"),
         )
@@ -311,8 +323,8 @@ class TestSemanticTools(unittest.TestCase):
         tmp_semantics = ArchSemantics(test_mm_x86)
         tmp_code_1 = "fantasyinstr1 %rax, %rax\n"
         tmp_code_2 = "fantasyinstr1 %rax, %rax\nfantasyinstr2 %rbx, %rbx\n"
-        tmp_kernel_1 = self.parser_x86.parse_file(tmp_code_1)
-        tmp_kernel_2 = self.parser_x86.parse_file(tmp_code_2)
+        tmp_kernel_1 = self.parser_x86_att.parse_file(tmp_code_1)
+        tmp_kernel_2 = self.parser_x86_att.parse_file(tmp_code_2)
         tmp_semantics.add_semantics(tmp_kernel_1)
         tmp_semantics.add_semantics(tmp_kernel_2)
         tmp_semantics.assign_optimal_throughput(tmp_kernel_1)
@@ -343,7 +355,12 @@ class TestSemanticTools(unittest.TestCase):
         #  3
         #     5_______>9
         #
-        dg = KernelDG(self.kernel_x86, self.parser_x86, self.machine_model_csx, self.semantics_csx)
+        dg = KernelDG(
+            self.kernel_x86,
+            self.parser_x86_att,
+            self.machine_model_csx,
+            self.semantics_csx
+        )
         self.assertTrue(nx.algorithms.dag.is_directed_acyclic_graph(dg.dg))
         self.assertEqual(len(list(dg.get_dependent_instruction_forms(line_number=3))), 1)
         self.assertEqual(next(dg.get_dependent_instruction_forms(line_number=3)), 6)
@@ -363,7 +380,7 @@ class TestSemanticTools(unittest.TestCase):
     def test_memdependency_x86(self):
         dg = KernelDG(
             self.kernel_x86_memdep,
-            self.parser_x86,
+            self.parser_x86_att,
             self.machine_model_csx,
             self.semantics_csx,
         )
@@ -421,10 +438,10 @@ class TestSemanticTools(unittest.TestCase):
         )
         self.assertTrue(machine_model_hld.has_hidden_loads())
         semantics_hld = ArchSemantics(machine_model_hld)
-        kernel_hld = self.parser_x86.parse_file(self.code_x86)
-        kernel_hld_2 = self.parser_x86.parse_file(self.code_x86)
-        kernel_hld_2 = self.parser_x86.parse_file(self.code_x86)[-3:]
-        kernel_hld_3 = self.parser_x86.parse_file(self.code_x86)[5:8]
+        kernel_hld = self.parser_x86_att.parse_file(self.code_x86)
+        kernel_hld_2 = self.parser_x86_att.parse_file(self.code_x86)
+        kernel_hld_2 = self.parser_x86_att.parse_file(self.code_x86)[-3:]
+        kernel_hld_3 = self.parser_x86_att.parse_file(self.code_x86)[5:8]
 
         semantics_hld.add_semantics(kernel_hld)
         semantics_hld.add_semantics(kernel_hld_2)
@@ -438,7 +455,12 @@ class TestSemanticTools(unittest.TestCase):
         self.assertEqual(num_hidden_loads_3, 1)
 
     def test_cyclic_dag(self):
-        dg = KernelDG(self.kernel_x86, self.parser_x86, self.machine_model_csx, self.semantics_csx)
+        dg = KernelDG(
+            self.kernel_x86,
+            self.parser_x86_att,
+            self.machine_model_csx,
+            self.semantics_csx
+        )
         dg.dg.add_edge(100, 101, latency=1.0)
         dg.dg.add_edge(101, 102, latency=2.0)
         dg.dg.add_edge(102, 100, latency=3.0)
@@ -503,7 +525,12 @@ class TestSemanticTools(unittest.TestCase):
     def test_loop_carried_dependency_x86(self):
         lcd_id = "8"
         lcd_id2 = "5"
-        dg = KernelDG(self.kernel_x86, self.parser_x86, self.machine_model_csx, self.semantics_csx)
+        dg = KernelDG(
+            self.kernel_x86,
+            self.parser_x86_att,
+            self.machine_model_csx,
+            self.semantics_csx
+        )
         lc_deps = dg.get_loopcarried_dependencies()
         # self.assertEqual(len(lc_deps), 2)
         # ID 8
@@ -532,7 +559,7 @@ class TestSemanticTools(unittest.TestCase):
         start_time = time.perf_counter()
         KernelDG(
             self.kernel_x86_long_LCD,
-            self.parser_x86,
+            self.parser_x86_att,
             self.machine_model_csx,
             self.semantics_x86,
             timeout=10,
@@ -542,7 +569,7 @@ class TestSemanticTools(unittest.TestCase):
         start_time = time.perf_counter()
         KernelDG(
             self.kernel_x86_long_LCD,
-            self.parser_x86,
+            self.parser_x86_att,
             self.machine_model_csx,
             self.semantics_x86,
             timeout=2,
@@ -556,22 +583,26 @@ class TestSemanticTools(unittest.TestCase):
 
     def test_is_read_is_written_x86(self):
         # independent form HW model
-        dag = KernelDG(self.kernel_x86, self.parser_x86, None, None)
+        dag = KernelDG(self.kernel_x86, self.parser_x86_att, None, None)
         reg_rcx = RegisterOperand(name="rcx")
         reg_ymm1 = RegisterOperand(name="ymm1")
 
-        instr_form_r_c = self.parser_x86.parse_line("vmovsd  %xmm0, (%r15,%rcx,8)")
+        instr_form_r_c = self.parser_x86_att.parse_line("vmovsd  %xmm0, (%r15,%rcx,8)")
         self.semantics_csx.assign_src_dst(instr_form_r_c)
-        instr_form_non_r_c = self.parser_x86.parse_line("movl  %xmm0, (%r15,%rax,8)")
+        instr_form_non_r_c = self.parser_x86_att.parse_line("movl  %xmm0, (%r15,%rax,8)")
         self.semantics_csx.assign_src_dst(instr_form_non_r_c)
-        instr_form_w_c = self.parser_x86.parse_line("movi $0x05ACA, %rcx")
+        instr_form_w_c = self.parser_x86_att.parse_line("movi $0x05ACA, %rcx")
         self.semantics_csx.assign_src_dst(instr_form_w_c)
 
-        instr_form_rw_ymm_1 = self.parser_x86.parse_line("vinsertf128 $0x1, %xmm1, %ymm0, %ymm1")
+        instr_form_rw_ymm_1 = self.parser_x86_att.parse_line(
+            "vinsertf128 $0x1, %xmm1, %ymm0, %ymm1"
+        )
         self.semantics_csx.assign_src_dst(instr_form_rw_ymm_1)
-        instr_form_rw_ymm_2 = self.parser_x86.parse_line("vinsertf128 $0x1, %xmm0, %ymm1, %ymm1")
+        instr_form_rw_ymm_2 = self.parser_x86_att.parse_line(
+            "vinsertf128 $0x1, %xmm0, %ymm1, %ymm1"
+        )
         self.semantics_csx.assign_src_dst(instr_form_rw_ymm_2)
-        instr_form_r_ymm = self.parser_x86.parse_line("vmovapd %ymm1, %ymm0")
+        instr_form_r_ymm = self.parser_x86_att.parse_line("vmovapd %ymm1, %ymm0")
         self.semantics_csx.assign_src_dst(instr_form_r_ymm)
         self.assertTrue(dag.is_read(reg_rcx, instr_form_r_c))
         self.assertFalse(dag.is_read(reg_rcx, instr_form_non_r_c))

@@ -26,16 +26,14 @@ class INSTR_FLAGS:
 
 
 class ISASemantics(object):
-    GAS_SUFFIXES = "bswlqt"
-
-    def __init__(self, isa, path_to_yaml=None):
-        self._isa = isa.lower()
-        path = path_to_yaml or utils.find_datafile("isa/" + self._isa + ".yml")
+    def __init__(self, parser, path_to_yaml=None):
+        path = path_to_yaml or utils.find_datafile("isa/" + parser.isa() + ".yml")
         self._isa_model = MachineModel(path_to_yaml=path)
-        if self._isa == "x86":
-            self._parser = ParserX86ATT()
-        elif self._isa == "aarch64":
-            self._parser = ParserAArch64()
+        self._parser = parser
+
+    @property
+    def parser(self):
+        return self._parser
 
     def process(self, instruction_forms):
         """Process a list of instruction forms."""
@@ -57,20 +55,10 @@ class ISASemantics(object):
         isa_data = self._isa_model.get_instruction(
             instruction_form.mnemonic, instruction_form.operands
         )
-        if (
-            isa_data is None
-            and self._isa == "x86"
-            and instruction_form.mnemonic[-1] in self.GAS_SUFFIXES
-        ):
-            # Check for instruction without GAS suffix
+        if not isa_data:
             isa_data = self._isa_model.get_instruction(
-                instruction_form.mnemonic[:-1], instruction_form.operands
-            )
-        if isa_data is None and self._isa == "aarch64" and "." in instruction_form.mnemonic:
-            # Check for instruction without shape/cc suffix
-            suffix_start = instruction_form.mnemonic.index(".")
-            isa_data = self._isa_model.get_instruction(
-                instruction_form.mnemonic[:suffix_start], instruction_form.operands
+                self._parser.normalize_mnemonic(instruction_form.mnemonic),
+                instruction_form.operands
             )
         operands = instruction_form.operands
         op_dict = {}
@@ -88,24 +76,10 @@ class ISASemantics(object):
                 isa_data_reg = self._isa_model.get_instruction(
                     instruction_form.mnemonic, operands_reg
                 )
-                if (
-                    isa_data_reg is None
-                    and self._isa == "x86"
-                    and instruction_form.mnemonic[-1] in self.GAS_SUFFIXES
-                ):
-                    # Check for instruction without GAS suffix
+                if not isa_data_reg:
                     isa_data_reg = self._isa_model.get_instruction(
-                        instruction_form.mnemonic[:-1], operands_reg
-                    )
-                if (
-                    isa_data_reg is None
-                    and self._isa == "aarch64"
-                    and "." in instruction_form.mnemonic
-                ):
-                    # Check for instruction without shape/cc suffix
-                    suffix_start = instruction_form.mnemonic.index(".")
-                    isa_data_reg = self._isa_model.get_instruction(
-                        instruction_form.mnemonic[:suffix_start], operands_reg
+                        self._parser.normalize_mnemonic(instruction_form.mnemonic),
+                        operands_reg
                     )
                 if isa_data_reg:
                     assign_default = False
@@ -174,20 +148,10 @@ class ISASemantics(object):
         isa_data = self._isa_model.get_instruction(
             instruction_form.mnemonic, instruction_form.operands
         )
-        if (
-            isa_data is None
-            and self._isa == "x86"
-            and instruction_form.mnemonic[-1] in self.GAS_SUFFIXES
-        ):
-            # Check for instruction without GAS suffix
+        if not isa_data:
             isa_data = self._isa_model.get_instruction(
-                instruction_form.mnemonic[:-1], instruction_form.operands
-            )
-        if isa_data is None and self._isa == "aarch64" and "." in instruction_form.mnemonic:
-            # Check for instruction without shape/cc suffix
-            suffix_start = instruction_form.mnemonic.index(".")
-            isa_data = self._isa_model.get_instruction(
-                instruction_form.mnemonic[:suffix_start], instruction_form.operands
+                self._parser.normalize_mnemonic(instruction_form.mnemonic),
+                instruction_form.operands
             )
 
         if only_postindexed:

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Semantics opbject responsible for architecture specific semantic operations"""
 
+from dis import Instruction
 import sys
 import warnings
 from itertools import chain
@@ -14,12 +15,9 @@ from osaca.parser.register import RegisterOperand
 
 
 class ArchSemantics(ISASemantics):
-    GAS_SUFFIXES = "bswlqt"
-
-    def __init__(self, machine_model: MachineModel, path_to_yaml=None):
-        super().__init__(machine_model.get_ISA().lower(), path_to_yaml=path_to_yaml)
+    def __init__(self, parser, machine_model: MachineModel, path_to_yaml=None):
+        super().__init__(parser, path_to_yaml=path_to_yaml)
         self._machine_model = machine_model
-        self._isa = machine_model.get_ISA().lower()
 
     # SUMMARY FUNCTION
     def add_semantics(self, kernel):
@@ -189,24 +187,10 @@ class ArchSemantics(ISASemantics):
             instruction_data = self._machine_model.get_instruction(
                 instruction_form.mnemonic, instruction_form.operands
             )
-            if (
-                not instruction_data
-                and self._isa == "x86"
-                and instruction_form.mnemonic[-1] in self.GAS_SUFFIXES
-            ):
-                # check for instruction without GAS suffix
+            if not instruction_data:
                 instruction_data = self._machine_model.get_instruction(
-                    instruction_form.mnemonic[:-1], instruction_form.operands
-                )
-            if (
-                instruction_data is None
-                and self._isa == "aarch64"
-                and "." in instruction_form.mnemonic
-            ):
-                # Check for instruction without shape/cc suffix
-                suffix_start = instruction_form.mnemonic.index(".")
-                instruction_data = self._machine_model.get_instruction(
-                    instruction_form.mnemonic[:suffix_start], instruction_form.operands
+                    self._parser.normalize_mnemonic(instruction_form.mnemonic),
+                    instruction_form.operands
                 )
             if instruction_data:
                 # instruction form in DB
@@ -232,25 +216,11 @@ class ArchSemantics(ISASemantics):
                     instruction_data_reg = self._machine_model.get_instruction(
                         instruction_form.mnemonic, operands
                     )
-                    if (
-                        not instruction_data_reg
-                        and self._isa == "x86"
-                        and instruction_form.mnemonic[-1] in self.GAS_SUFFIXES
-                    ):
-                        # check for instruction without GAS suffix
+                    if not instruction_data_reg:
                         instruction_data_reg = self._machine_model.get_instruction(
-                            instruction_form.mnemonic[:-1], operands
-                        )
-                    if (
-                        instruction_data_reg is None
-                        and self._isa == "aarch64"
-                        and "." in instruction_form.mnemonic
-                    ):
-                        # Check for instruction without shape/cc suffix
-                        suffix_start = instruction_form.mnemonic.index(".")
-                        instruction_data_reg = self._machine_model.get_instruction(
-                            instruction_form.mnemonic[:suffix_start], operands
-                        )
+                            self._parser.normalize_mnemonic(instruction_form.mnemonic),
+                            operands
+                    )
                     if instruction_data_reg:
                         assign_unknown = False
                         reg_type = self._parser.get_reg_type(
