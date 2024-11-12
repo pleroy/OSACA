@@ -266,7 +266,7 @@ class TestSemanticTools(unittest.TestCase):
         test_mm_arm.add_port("dummyPort")
 
         # test dump of DB
-        with open("/dev/null", "w") as dev_null:
+        with open(os.devnull, "w") as dev_null:
             test_mm_x86.dump(stream=dev_null)
             test_mm_arm.dump(stream=dev_null)
 
@@ -375,7 +375,7 @@ class TestSemanticTools(unittest.TestCase):
         with self.assertRaises(ValueError):
             dg.get_dependent_instruction_forms()
         # test dot creation
-        dg.export_graph(filepath="/dev/null")
+        dg.export_graph(filepath=os.devnull)
 
     def test_memdependency_x86(self):
         dg = KernelDG(
@@ -390,7 +390,7 @@ class TestSemanticTools(unittest.TestCase):
         with self.assertRaises(ValueError):
             dg.get_dependent_instruction_forms()
         # test dot creation
-        dg.export_graph(filepath="/dev/null")
+        dg.export_graph(filepath=os.devnull)
 
     def test_kernelDG_AArch64(self):
         dg = KernelDG(
@@ -421,7 +421,7 @@ class TestSemanticTools(unittest.TestCase):
         with self.assertRaises(ValueError):
             dg.get_dependent_instruction_forms()
         # test dot creation
-        dg.export_graph(filepath="/dev/null")
+        dg.export_graph(filepath=os.devnull)
 
     def test_kernelDG_SVE(self):
         KernelDG(
