@@ -130,7 +130,7 @@ def match_lines(parser, lines, marker):
     """
     marker_iter = iter(marker)
     marker_line = next(marker_iter)
-    for length, line in enumerate(lines):
+    for matched_lines, line in enumerate(lines):
         if isinstance(marker_line, list):
             # No support for partial matching in lists.
             for marker_alternative in marker_line:
@@ -153,7 +153,7 @@ def match_lines(parser, lines, marker):
                 marker_line = next(marker_iter, None)
         # If we have reached the last marker line, the parsed code matches the marker.
         if not marker_line:
-            return length + 1
+            return matched_lines + 1
 
 def match_line(parser, line, marker_line):
     """
