@@ -99,14 +99,14 @@ def find_marked_section(lines, parser, comments=None):
                     index_end = i
             if index_start == -1:
                 start_marker = parser.start_marker()
-                matches, length = match_lines(parser, lines, i, start_marker)
-                if matches:
+                length = match_lines(parser, lines[i:], start_marker)
+                if length > 0:
                     # return first line after the marker
                     index_start = i + length
             if index_end == -1:
                 end_marker = parser.end_marker()
-                matches, length = match_lines(parser, lines, i, end_marker)
-                if matches:
+                length = match_lines(parser, lines[i:], end_marker)
+                if length > 0:
                     index_end = i
         except TypeError as e:
             print(i, e, line)
@@ -121,43 +121,40 @@ def find_marked_section(lines, parser, comments=None):
 # the syntax of numeric literals depends on the parser and should not be known to this class.
 # The matching only checks for a limited number of properties (and the marker doesn't specify the
 # rest).
-def match_lines(parser, lines, index, marker):
+def match_lines(parser, lines, marker):
     """
-    Returns True iff the lines starting at `index` match the `marker`.
+    Returns True iff the `lines` match the `marker`.
 
-    :param list of `IntructionForm` lines: parsed assembly code.
-    :param index: first line to try to match in `lines`.
-    :param list of `InstructioForm` marker: pattern to match against the `lines`.
-    :return: tuple bool, int: whether a match was found and the length of the match in the parsed
-                              code.
+    :param list of `InstructionForm` lines: parsed assembly code.
+    :param list of `InstructionForm` marker: pattern to match against the `lines`.
+    :return int: the length of the match in the parsed code, 0 if there is no match.
     """
-    length = 0
-    marker_index = 0
-    while marker_index < len(marker):
-        line = lines[index + length]
-        marker_line = marker[marker_index]
+    marker_iter = iter(marker)
+    marker_line = next(marker_iter)
+    for length, line in enumerate(lines):
         if isinstance(marker_line, list):
             # No support for partial matching in lists.
-            for i in range(len(marker_line)):
-                matching = match_line(parser, line, marker_line[i])
+            for marker_alternative in marker_line:
+                matching = match_line(parser, line, marker_alternative)
                 if matching == Matching.Full:
                     break
             else:
-                return False, None
-            marker_index += 1
+                return 0
+            marker_line = next(marker_iter, None)
         else:
             matching = match_line(parser, line, marker_line)
             if matching == Matching.No:
-                return False, None
+                return 0
             elif matching == Matching.Partial:
                 # Try the same marker line again.  The call to `match_line` consumed some of the
                 # directive parameters.
                 pass
             elif matching == Matching.Full:
                 # Move to the next marker line, the current one has been fully matched.
-                marker_index += 1
-        length += 1
-    return True, length
+                marker_line = next(marker_iter, None)
+        # If we have reached the last marker line, the parsed code matches the marker.
+        if not marker_line:
+            return length + 1
 
 def match_line(parser, line, marker_line):
     """
@@ -187,10 +184,11 @@ def match_line(parser, line, marker_line):
 def match_operands(line_operands, marker_line_operands):
     if len(line_operands) != len(marker_line_operands):
         return False
-    for i in range(len(line_operands)):
-        if not match_operand(line_operands[i], marker_line_operands[i]):
-            return False
-    return True
+    return all(
+        match_operand(line_operand, marker_line_operand)
+        for line_operand, marker_line_operand in
+        zip(line_operands, marker_line_operands)
+    )
 
 def match_operand(line_operand, marker_line_operand):
     if (
@@ -227,24 +225,26 @@ def match_parameters(parser, line_parameters, marker_line_parameters):
     marker_line_parameter_count = len(marker_line_parameters)
 
     # The elements of `marker_line_parameters` are consumed as they are matched.
-    for i in range(min(line_parameter_count, marker_line_parameter_count)):
-        line_parameter = line_parameters[i]
+    for line_parameter in line_parameters:
+        if not marker_line_parameters:
+            break;
         marker_line_parameter = marker_line_parameters[0]
-        if not match_parameter(line_parameter, marker_line_parameter):
-            # If the parameters don't match verbatim, check if they represent the same immediate
-            # value.
-            line_immediate = ImmediateOperand(value=line_parameter)
-            marker_line_immediate = ImmediateOperand(value=marker_line_parameter)
-            if parser.normalize_imd(line_immediate) != parser.normalize_imd(marker_line_immediate):
-                return Matching.No
+        if not match_parameter(parser, line_parameter, marker_line_parameter):
+            return Matching.No
         marker_line_parameters.pop(0)
-    if len(marker_line_parameters) == 0:
-        return Matching.Full
-    else:
+    if marker_line_parameters:
         return Matching.Partial
+    else:
+        return Matching.Full
 
-def match_parameter(line_parameter, marker_line_parameter):
-    return line_parameter.lower() == marker_line_parameter.lower()
+def match_parameter(parser, line_parameter, marker_line_parameter):
+    if line_parameter.lower() == marker_line_parameter.lower():
+        return True
+    else:
+        # If the parameters don't match verbatim, check if they represent the same immediate value.
+        line_immediate = ImmediateOperand(value=line_parameter)
+        marker_line_immediate = ImmediateOperand(value=marker_line_parameter)
+        return parser.normalize_imd(line_immediate) == parser.normalize_imd(marker_line_immediate)
 
 
 def find_jump_labels(lines):
