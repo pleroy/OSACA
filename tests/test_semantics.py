@@ -437,7 +437,7 @@ class TestSemanticTools(unittest.TestCase):
             path_to_yaml=self._find_file("hidden_load_machine_model.yml")
         )
         self.assertTrue(machine_model_hld.has_hidden_loads())
-        semantics_hld = ArchSemantics(machine_model_hld)
+        semantics_hld = ArchSemantics(self.parser_x86_att, machine_model_hld)
         kernel_hld = self.parser_x86_att.parse_file(self.code_x86)
         kernel_hld_2 = self.parser_x86_att.parse_file(self.code_x86)
         kernel_hld_2 = self.parser_x86_att.parse_file(self.code_x86)[-3:]
