@@ -105,8 +105,7 @@ def find_marked_section(lines, parser, comments=None):
                     index_start = i + length
             if index_end == -1:
                 end_marker = parser.end_marker()
-                length = match_lines(parser, lines[i:], end_marker)
-                if length > 0:
+                if match_lines(parser, lines[i:], end_marker):
                     index_end = i
         except TypeError as e:
             print(i, e, line)
