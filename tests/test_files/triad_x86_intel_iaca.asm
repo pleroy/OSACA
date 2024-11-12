@@ -83,7 +83,7 @@ repeat$ = 320
 cur_elements$ = 328
 kernel	PROC						; COMDAT
 ; File C:\Users\phl\Projects\GitHub\OSACA\validation\kernels\triad.c
-; Line 18
+; Line 22
 $LN9:
 	movsd	QWORD PTR [rsp+32], xmm3
 	mov	QWORD PTR [rsp+24], r8
@@ -96,7 +96,7 @@ $LN9:
 	lea	rcx, OFFSET FLAT:__621B1B6F_triad@c
 	call	__CheckForDebuggerJustMyCode
 	npad	1
-; Line 19
+; Line 23
 	mov	DWORD PTR r$1[rbp], 0
 	jmp	SHORT $LN4@kernel
 $LN2@kernel:
@@ -107,7 +107,7 @@ $LN4@kernel:
 	mov	eax, DWORD PTR repeat$[rbp]
 	cmp	DWORD PTR r$1[rbp], eax
 	jge	$LN3@kernel
-; Line 20
+; Line 24
 	mov	DWORD PTR i$2[rbp], 0
 	jmp	SHORT $LN7@kernel
 $LN5@kernel:
@@ -118,10 +118,10 @@ $LN7@kernel:
 	mov	eax, DWORD PTR cur_elements$[rbp]
 	cmp	DWORD PTR i$2[rbp], eax
 	jge	SHORT $LN6@kernel
-; Line 21
+; Line 26
 	mov	al, 111					; 0000006fH
 	mov	BYTE PTR gs:111, al
-; Line 22
+; Line 28
 	movsxd	rax, DWORD PTR i$2[rbp]
 	movsxd	rcx, DWORD PTR i$2[rbp]
 	mov	rdx, QWORD PTR c$[rbp]
@@ -134,20 +134,20 @@ $LN7@kernel:
 	movsxd	rax, DWORD PTR i$2[rbp]
 	mov	rcx, QWORD PTR a$[rbp]
 	movsd	QWORD PTR [rcx+rax*8], xmm0
-; Line 23
+; Line 30
 	mov	al, 222					; 000000deH
 	mov	BYTE PTR gs:222, al
-; Line 24
+; Line 32
 	jmp	SHORT $LN5@kernel
 $LN6@kernel:
-; Line 25
+; Line 33
 	mov	rcx, QWORD PTR a$[rbp]
 	call	dummy
 	npad	1
-; Line 26
+; Line 34
 	jmp	$LN2@kernel
 $LN3@kernel:
-; Line 27
+; Line 35
 	lea	rsp, QWORD PTR [rbp+264]
 	pop	rdi
 	pop	rbp

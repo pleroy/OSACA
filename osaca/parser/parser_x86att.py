@@ -26,7 +26,43 @@ class ParserX86ATT(BaseParser):
 
     def __init__(self):
         super().__init__()
-        self.isa = "x86"
+
+    def isa(self):
+        return "x86"
+
+    def start_marker(self):
+        return [
+            [
+                InstructionForm(
+                    mnemonic="mov",
+                    operands=[ImmediateOperand(value=111), RegisterOperand(name="ebx")]
+                 ),
+                 InstructionForm(
+                     mnemonic="movl",
+                     operands=[ImmediateOperand(value=111), RegisterOperand(name="ebx")]
+                 )
+            ],
+            InstructionForm(
+                directive_id=DirectiveOperand(name="byte", parameters=["100", "103", "144"])
+            )
+        ]
+
+    def end_marker(self):
+        return [
+            [
+                InstructionForm(
+                    mnemonic="mov",
+                    operands=[ImmediateOperand(value=222), RegisterOperand(name="ebx")]
+                 ),
+                 InstructionForm(
+                     mnemonic="movl",
+                     operands=[ImmediateOperand(value=222), RegisterOperand(name="ebx")]
+                 )
+            ],
+            InstructionForm(
+                directive_id=DirectiveOperand(name="byte", parameters=["100", "103", "144"])
+            )
+        ]
 
     def construct_parser(self):
         """Create parser for x86 AT&T ISA."""

@@ -25,6 +25,26 @@ class BaseParser(object):
             self.construct_parser()
             self._parser_constructed = True
 
+    def isa(self):
+        # Done in derived classes
+        raise NotImplementedError
+
+    # The marker functions return lists of `InstructionForm` that are used to find the IACA markers
+    # in the parsed code.  In addition to just a list, the marker may have a structure like
+    # [I1, [I2, I3], I4, ...] where the nested list indicates that at least one of I2 and I3 must
+    # match the second instruction in the fragment of parsed code.
+    # If an instruction form is a `DirectiveOperand`, the match may happen over several directive
+    # operands in the parsed code, provided that the directives have the same name and the
+    # parameters are in sequence with respect to the pattern.  This provides an easy way to describe
+    # a sequence of bytes irrespective of the way it was grouped in the assemble source.
+    def start_marker(self):
+        # Done in derived classes
+        raise NotImplementedError
+
+    def end_marker(self):
+        # Done in derived classes
+        raise NotImplementedError
+
     @staticmethod
     def detect_ISA(file_content):
         """
