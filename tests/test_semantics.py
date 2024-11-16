@@ -10,7 +10,7 @@ from copy import deepcopy
 
 import networkx as nx
 from osaca.osaca import get_unmatched_instruction_ratio
-from osaca.parser import ParserAArch64, ParserX86ATT
+from osaca.parser import ParserAArch64, ParserX86ATT, ParserX86Intel
 from osaca.semantics import (
     INSTR_FLAGS,
     ArchSemantics,
@@ -33,6 +33,7 @@ class TestSemanticTools(unittest.TestCase):
     def setUpClass(cls):
         # set up parser and kernels
         cls.parser_x86_att = ParserX86ATT()
+        cls.parser_x86_intel = ParserX86Intel()
         cls.parser_AArch64 = ParserAArch64()
         with open(cls._find_file("kernel_x86.s")) as f:
             cls.code_x86 = f.read()
@@ -40,6 +41,8 @@ class TestSemanticTools(unittest.TestCase):
             cls.code_x86_memdep = f.read()
         with open(cls._find_file("kernel_x86_long_LCD.s")) as f:
             cls.code_x86_long_LCD = f.read()
+        with open(cls._find_file("kernel_x86_intel.asm")) as f:
+            cls.code_x86_intel = f.read()
         with open(cls._find_file("kernel_aarch64_memdep.s")) as f:
             cls.code_aarch64_memdep = f.read()
         with open(cls._find_file("kernel_aarch64.s")) as f:
@@ -93,6 +96,12 @@ class TestSemanticTools(unittest.TestCase):
             cls.machine_model_csx,
             path_to_yaml=os.path.join(cls.MODULE_DATA_DIR, "isa/x86.yml"),
         )
+        cls.semantics_x86_intel = ISASemantics(cls.parser_x86_intel)
+        cls.semantics_csx_intel = ArchSemantics(
+            cls.parser_x86_intel,
+            cls.machine_model_csx,
+            path_to_yaml=os.path.join(cls.MODULE_DATA_DIR, "isa/x86.yml"),
+        )
         cls.semantics_aarch64 = ISASemantics(cls.parser_AArch64)
         cls.semantics_tx2 = ArchSemantics(
             cls.parser_AArch64,
@@ -115,6 +124,9 @@ class TestSemanticTools(unittest.TestCase):
         for i in range(len(cls.kernel_x86_long_LCD)):
             cls.semantics_csx.assign_src_dst(cls.kernel_x86_long_LCD[i])
             cls.semantics_csx.assign_tp_lt(cls.kernel_x86_long_LCD[i])
+        for i in range(len(cls.kernel_x86_intel)):
+            cls.semantics_csx_intel.assign_src_dst(cls.kernel_x86_intel[i])
+            cls.semantics_csx_intel.assign_tp_lt(cls.kernel_x86_intel[i])
         for i in range(len(cls.kernel_AArch64)):
             cls.semantics_tx2.assign_src_dst(cls.kernel_AArch64[i])
             cls.semantics_tx2.assign_tp_lt(cls.kernel_AArch64[i])

@@ -280,7 +280,7 @@ class ArchSemantics(ISASemantics):
                             #   - all mem operands in src_dst are pre-/post_indexed
                             # since it is no mem store
                             if (
-                                self._isa == "aarch64"
+                                self._parser.isa() == "aarch64"
                                 and not isinstance(
                                     instruction_form.semantic_operands["destination"],
                                     MemoryOperand,
@@ -411,12 +411,13 @@ class ArchSemantics(ISASemantics):
 
     def convert_op_to_reg(self, reg_type, regtype="0"):
         """Create register operand for a memory addressing operand"""
-        if self._isa == "x86":
+        # TODO: Intel
+        if self._parser.isa() == "x86":
             if reg_type == "gpr":
                 register = RegisterOperand(name="r" + str(int(regtype) + 9))
             else:
                 register = RegisterOperand(name=reg_type + regtype)
-        elif self._isa == "aarch64":
+        elif self._parser.isa() == "aarch64":
             register = RegisterOperand(name=regtype, prefix=reg_type)
         return register
 
