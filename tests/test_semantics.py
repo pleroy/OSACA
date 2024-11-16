@@ -63,6 +63,10 @@ class TestSemanticTools(unittest.TestCase):
             cls.parser_x86_att.parse_file(cls.code_x86_long_LCD),
             cls.parser_x86_att
         )
+        cls.kernel_x86_intel = reduce_to_section(
+            cls.parser_x86_intel.parse_file(cls.code_x86_intel),
+            cls.parser_x86_intel
+        )
         cls.kernel_AArch64 = reduce_to_section(
             cls.parser_AArch64.parse_file(cls.code_AArch64),
             cls.parser_AArch64
