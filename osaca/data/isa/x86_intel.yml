@@ -1,0 +1,4245 @@
+osaca_version: 0.3.4
+isa: "x86"
+# Contains all operand-irregular instruction forms OSACA supports for x86.
+# Operand-regular for a x86 AT&T instruction form with N operands in the shape of
+#   mnemonic op1 ... opN
+# means that opN is the only destination operand and op1 to op(N-1) are source operands.
+instruction_forms:
+- name: adc
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+- name: adc
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: true
+  - class: "immediate"
+    imd: "int"
+    source: true
+    destination: false
+- name: add
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: true
+  - class: "immediate"
+    imd: "int"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "OF"
+    source: true
+    destination: false
+  - class: "flag"
+    name: "SF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "ZF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "AF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "PF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "CF"
+    source: false
+    destination: true
+  operation: "op2['value'] += op1['value']"
+- name: add
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "OF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "SF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "ZF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "AF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "PF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "CF"
+    source: false
+    destination: true
+- name: add
+  operands:
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: true
+    destination: true
+  - class: "immediate"
+    imd: "int"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "OF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "SF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "ZF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "AF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "PF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "CF"
+    source: false
+    destination: true
+- name: add
+  operands:
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: true
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "OF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "SF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "ZF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "AF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "PF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "CF"
+    source: false
+    destination: true
+- name: divsd
+  operands:
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: false
+- name: addsd
+  operands:
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: false
+- name: [addss, addps, addpd]
+  operands:
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: false
+- name: [addsubps, addsubpd]
+  operands:
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: false
+- name: [aesdec, aesdeclast, aesenc, aesenclast]
+  operands:
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: false
+- name: not
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: true
+- name: not
+  operands:
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: true
+    destination: true
+- name: or
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: true
+  - class: "immediate"
+    imd: "int"
+    source: true
+    destination: false
+- name: or
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+- name: or
+  operands:
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: true
+    destination: true
+  - class: "immediate"
+    imd: "int"
+    source: true
+    destination: false
+- name: or
+  operands:
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: true
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+- name: and
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: true
+  - class: "immediate"
+    imd: "int"
+    source: true
+    destination: false
+- name: and
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+- name: and
+  operands:
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: true
+    destination: true
+  - class: "immediate"
+    imd: "int"
+    source: true
+    destination: false
+- name: and
+  operands:
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: true
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+- name: andn
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: false
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+- name: [blendvps, blendvpd]
+  operands:
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "register"
+    name: "xmm0"
+    source: true
+    destination: false
+- name: blsr
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: false
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+- name: bsf
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: false
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+- name: bsr
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: false
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+- name: bts
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: true
+  - class: "immediate"
+    imd: "int"
+    source: true
+    destination: false
+- name: bts
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+- name: bts
+  operands:
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: true
+    destination: true
+  - class: "immediate"
+    imd: "int"
+    source: true
+    destination: false
+- name: bts
+  operands:
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: true
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+- name: cld
+  operands: []
+  hidden_operands:
+  - class: "flag"
+    name: "DF"
+    source: false
+    destination: true
+- name: cbtw
+  operands: []
+  hidden_operands:
+  - class: "register"
+    name: "al"
+    source: true
+    destination: false
+  - class: "register"
+    name: "ax"
+    source: false
+    destination: true
+- name: [cwtl, cwde]
+  operands: []
+  hidden_operands:
+  - class: "register"
+    name: "ax"
+    source: true
+    destination: false
+  - class: "register"
+    name: "eax"
+    source: false
+    destination: true
+- name: cwtd
+  operands: []
+  hidden_operands:
+  - class: "register"
+    name: "ax"
+    source: true
+    destination: false
+  - class: "register"
+    name: "dx"
+    source: false
+    destination: true
+  - class: "register"
+    name: "ax"
+    source: false
+    destination: true
+- name: cltd
+  operands: []
+  hidden_operands:
+  - class: "register"
+    name: "eax"
+    source: true
+    destination: false
+  - class: "register"
+    name: "edx"
+    source: false
+    destination: true
+  - class: "register"
+    name: "eax"
+    source: false
+    destination: true
+- name: [cqo, cqto]
+  operands: []
+  hidden_operands:
+  - class: "register"
+    name: "rax"
+    source: true
+    destination: false
+  - class: "register"
+    name: "rdx"
+    source: false
+    destination: true
+- name: [cltq, cdqe]
+  operands: []
+  hidden_operands:
+  - class: "register"
+    name: "eax"
+    source: true
+    destination: false
+  - class: "register"
+    name: "rax"
+    source: false
+    destination: true
+- name: cqtq
+  operands: []
+  hidden_operands:
+  - class: "register"
+    name: "rax"
+    source: true
+    destination: false
+  - class: "register"
+    name: "rdx"
+    source: false
+    destination: true
+  - class: "register"
+    name: "rax"
+    source: false
+    destination: true
+- name: cmova
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: false
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "CF"
+    source: true
+    destination: false
+  - class: "flag"
+    name: "ZF"
+    source: true
+    destination: false
+- name: cmova
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: false
+    destination: true
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "CF"
+    source: true
+    destination: false
+  - class: "flag"
+    name: "ZF"
+    source: true
+    destination: false
+- name: cmova
+  operands:
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: false
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "CF"
+    source: true
+    destination: false
+  - class: "flag"
+    name: "ZF"
+    source: true
+    destination: false
+- name: cmovae
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: false
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "CF"
+    source: true
+    destination: false
+- name: cmovae
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: false
+    destination: true
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "CF"
+    source: true
+    destination: false
+- name: cmovae
+  operands:
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: false
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "CF"
+    source: true
+    destination: false
+- name: cmovb
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: false
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "CF"
+    source: true
+    destination: false
+- name: cmovb
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: false
+    destination: true
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "CF"
+    source: true
+    destination: false
+- name: cmovb
+  operands:
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: false
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "CF"
+    source: true
+    destination: false
+- name: cmovbe
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: false
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "CF"
+    source: true
+    destination: false
+  - class: "flag"
+    name: "ZF"
+    source: true
+    destination: false
+- name: cmovbe
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: false
+    destination: true
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "CF"
+    source: true
+    destination: false
+  - class: "flag"
+    name: "ZF"
+    source: true
+    destination: false
+- name: cmovbe
+  operands:
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: false
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "CF"
+    source: true
+    destination: false
+  - class: "flag"
+    name: "ZF"
+    source: true
+    destination: false
+- name: cmovc
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: false
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "CF"
+    source: true
+    destination: false
+- name: cmovc
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: false
+    destination: true
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "CF"
+    source: true
+    destination: false
+- name: cmovc
+  operands:
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: false
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "CF"
+    source: true
+    destination: false
+- name: cmove
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: false
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "ZF"
+    source: true
+    destination: false
+- name: cmove
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: false
+    destination: true
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "ZF"
+    source: true
+    destination: false
+- name: cmove
+  operands:
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: false
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "ZF"
+    source: true
+    destination: false
+- name: cmovg
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: false
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "ZF"
+    source: true
+    destination: false
+  - class: "flag"
+    name: "SF"
+    source: true
+    destination: false
+- name: cmovg
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: false
+    destination: true
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "ZF"
+    source: true
+    destination: false
+  - class: "flag"
+    name: "SF"
+    source: true
+    destination: false
+- name: cmovg
+  operands:
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: false
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "ZF"
+    source: true
+    destination: false
+  - class: "flag"
+    name: "SF"
+    source: true
+    destination: false
+- name: cmovge
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: false
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "SF"
+    source: true
+    destination: false
+- name: cmovge
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: false
+    destination: true
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "SF"
+    source: true
+    destination: false
+- name: cmovge
+  operands:
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: false
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "SF"
+    source: true
+    destination: false
+- name: cmovl
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: false
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "SF"
+    source: true
+    destination: false
+  - class: "flag"
+    name: "OF"
+    source: true
+    destination: false
+- name: cmovl
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: false
+    destination: true
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "SF"
+    source: true
+    destination: false
+  - class: "flag"
+    name: "OF"
+    source: true
+    destination: false
+- name: cmovl
+  operands:
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: false
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "SF"
+    source: true
+    destination: false
+  - class: "flag"
+    name: "OF"
+    source: true
+    destination: false
+- name: cmovle
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: false
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "ZF"
+    source: true
+    destination: false
+  - class: "flag"
+    name: "SF"
+    source: true
+    destination: false
+  - class: "flag"
+    name: "OF"
+    source: true
+    destination: false
+- name: cmovle
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: false
+    destination: true
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "ZF"
+    source: true
+    destination: false
+  - class: "flag"
+    name: "SF"
+    source: true
+    destination: false
+  - class: "flag"
+    name: "OF"
+    source: true
+    destination: false
+- name: cmovle
+  operands:
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: false
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "ZF"
+    source: true
+    destination: false
+  - class: "flag"
+    name: "SF"
+    source: true
+    destination: false
+  - class: "flag"
+    name: "OF"
+    source: true
+    destination: false
+- name: cmovna
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: false
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "CF"
+    source: true
+    destination: false
+  - class: "flag"
+    name: "ZF"
+    source: true
+    destination: false
+- name: cmovna
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: false
+    destination: true
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "CF"
+    source: true
+    destination: false
+  - class: "flag"
+    name: "ZF"
+    source: true
+    destination: false
+- name: cmovna
+  operands:
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: false
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "CF"
+    source: true
+    destination: false
+  - class: "flag"
+    name: "ZF"
+    source: true
+    destination: false
+- name: cmovnae
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: false
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "CF"
+    source: true
+    destination: false
+- name: cmovnae
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: false
+    destination: true
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "CF"
+    source: true
+    destination: false
+- name: cmovnae
+  operands:
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: false
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "CF"
+    source: true
+    destination: false
+- name: cmovnb
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: false
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "CF"
+    source: true
+    destination: false
+- name: cmovnb
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: false
+    destination: true
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "CF"
+    source: true
+    destination: false
+- name: cmovnb
+  operands:
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: false
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "CF"
+    source: true
+    destination: false
+- name: cmovnbe
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: false
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "CF"
+    source: true
+    destination: false
+  - class: "flag"
+    name: "ZF"
+    source: true
+    destination: false
+- name: cmovnbe
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: false
+    destination: true
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "CF"
+    source: true
+    destination: false
+  - class: "flag"
+    name: "ZF"
+    source: true
+    destination: false
+- name: cmovnbe
+  operands:
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: false
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "CF"
+    source: true
+    destination: false
+  - class: "flag"
+    name: "ZF"
+    source: true
+    destination: false
+- name: cmovnc
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: false
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "CF"
+    source: true
+    destination: false
+- name: cmovnc
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: false
+    destination: true
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "CF"
+    source: true
+    destination: false
+- name: cmovnc
+  operands:
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: false
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "CF"
+    source: true
+    destination: false
+- name: cmovne
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: false
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "ZF"
+    source: true
+    destination: false
+- name: cmovne
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: false
+    destination: true
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "ZF"
+    source: true
+    destination: false
+- name: cmovne
+  operands:
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: false
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "ZF"
+    source: true
+    destination: false
+- name: cmovng
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: false
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "ZF"
+    source: true
+    destination: false
+  - class: "flag"
+    name: "SF"
+    source: true
+    destination: false
+  - class: "flag"
+    name: "OF"
+    source: true
+    destination: false
+- name: cmovng
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: false
+    destination: true
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "ZF"
+    source: true
+    destination: false
+  - class: "flag"
+    name: "SF"
+    source: true
+    destination: false
+  - class: "flag"
+    name: "OF"
+    source: true
+    destination: false
+- name: cmovng
+  operands:
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: false
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "ZF"
+    source: true
+    destination: false
+  - class: "flag"
+    name: "SF"
+    source: true
+    destination: false
+  - class: "flag"
+    name: "OF"
+    source: true
+    destination: false
+- name: cmovnge
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: false
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "ZF"
+    source: true
+    destination: false
+  - class: "flag"
+    name: "OF"
+    source: true
+    destination: false
+- name: cmovnge
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: false
+    destination: true
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "ZF"
+    source: true
+    destination: false
+  - class: "flag"
+    name: "OF"
+    source: true
+    destination: false
+- name: cmovnge
+  operands:
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: false
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "ZF"
+    source: true
+    destination: false
+  - class: "flag"
+    name: "OF"
+    source: true
+    destination: false
+- name: cmovnl
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: false
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "SF"
+    source: true
+    destination: false
+  - class: "flag"
+    name: "OF"
+    source: true
+    destination: false
+- name: cmovnl
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: false
+    destination: true
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "SF"
+    source: true
+    destination: false
+  - class: "flag"
+    name: "OF"
+    source: true
+    destination: false
+- name: cmovnl
+  operands:
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: false
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "SF"
+    source: true
+    destination: false
+  - class: "flag"
+    name: "OF"
+    source: true
+    destination: false
+- name: cmovnle
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: false
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "ZF"
+    source: true
+    destination: false
+  - class: "flag"
+    name: "SF"
+    source: true
+    destination: false
+  - class: "flag"
+    name: "OF"
+    source: true
+    destination: false
+- name: cmovnle
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: false
+    destination: true
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "ZF"
+    source: true
+    destination: false
+  - class: "flag"
+    name: "SF"
+    source: true
+    destination: false
+  - class: "flag"
+    name: "OF"
+    source: true
+    destination: false
+- name: cmovnle
+  operands:
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: false
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "ZF"
+    source: true
+    destination: false
+  - class: "flag"
+    name: "SF"
+    source: true
+    destination: false
+  - class: "flag"
+    name: "OF"
+    source: true
+    destination: false
+- name: cmovno
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: false
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "OF"
+    source: true
+    destination: false
+- name: cmovno
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: false
+    destination: true
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "OF"
+    source: true
+    destination: false
+- name: cmovno
+  operands:
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: false
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "OF"
+    source: true
+    destination: false
+- name: cmovnp
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: false
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "PF"
+    source: true
+    destination: false
+- name: cmovnp
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: false
+    destination: true
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "PF"
+    source: true
+    destination: false
+- name: cmovnp
+  operands:
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: false
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "PF"
+    source: true
+    destination: false
+- name: cmovns
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: false
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "SF"
+    source: true
+    destination: false
+- name: cmovns
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: false
+    destination: true
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "SF"
+    source: true
+    destination: false
+- name: cmovns
+  operands:
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: false
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "SF"
+    source: true
+    destination: false
+- name: cmovnz
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: false
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "ZF"
+    source: true
+    destination: false
+- name: cmovnz
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: false
+    destination: true
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "ZF"
+    source: true
+    destination: false
+- name: cmovnz
+  operands:
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: false
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "ZF"
+    source: true
+    destination: false
+- name: cmovo
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: false
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "OF"
+    source: true
+    destination: false
+- name: cmovo
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: false
+    destination: true
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "OF"
+    source: true
+    destination: false
+- name: cmovo
+  operands:
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: false
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "OF"
+    source: true
+    destination: false
+- name: cmovp
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: false
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "PF"
+    source: true
+    destination: false
+- name: cmovp
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: false
+    destination: true
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "PF"
+    source: true
+    destination: false
+- name: cmovp
+  operands:
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: false
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "PF"
+    source: true
+    destination: false
+- name: cmovpe
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: false
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "PF"
+    source: true
+    destination: false
+- name: cmovpe
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: false
+    destination: true
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "PF"
+    source: true
+    destination: false
+- name: cmovpe
+  operands:
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: false
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "PF"
+    source: true
+    destination: false
+- name: cmovpo
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: false
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "PF"
+    source: true
+    destination: false
+- name: cmovpo
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: false
+    destination: true
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "PF"
+    source: true
+    destination: false
+- name: cmovpo
+  operands:
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: false
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "PF"
+    source: true
+    destination: false
+- name: cmovs
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: false
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "SF"
+    source: true
+    destination: false
+- name: cmovs
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: false
+    destination: true
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "SF"
+    source: true
+    destination: false
+- name: cmovs
+  operands:
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: false
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "SF"
+    source: true
+    destination: false
+- name: cmovz
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: false
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "ZF"
+    source: true
+    destination: false
+- name: cmovz
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: false
+    destination: true
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "ZF"
+    source: true
+    destination: false
+- name: cmovz
+  operands:
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: false
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "ZF"
+    source: true
+    destination: false
+- name: cmp
+  operands:
+  - class: "immediate"
+    imd: "int"
+    source: true
+    destination: false
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "CF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "OF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "SF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "ZF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "AF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "PF"
+    source: false
+    destination: true
+- name: cmp
+  operands:
+  - class: "immediate"
+    imd: "int"
+    source: true
+    destination: false
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "CF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "OF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "SF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "ZF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "AF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "PF"
+    source: false
+    destination: true
+- name: cmp
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "CF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "OF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "SF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "ZF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "AF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "PF"
+    source: false
+    destination: true
+- name: cmp
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "CF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "OF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "SF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "ZF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "AF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "PF"
+    source: false
+    destination: true
+- name: cmpxchg
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "register"
+    name: "rax"
+    source: true
+    destination: true
+  - class: "flag"
+    name: "ZF"
+    source: true
+    destination: true
+- name: cmpxchg
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: true
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "register"
+    name: "rax"
+    source: true
+    destination: true
+  - class: "flag"
+    name: "ZF"
+    source: true
+    destination: true
+- name: cmpxchg
+  operands:
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: true
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "register"
+    name: "rax"
+    source: true
+    destination: true
+  - class: "flag"
+    name: "ZF"
+    source: true
+    destination: true
+- name: dec
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: true
+  hidden_operands:
+  - class: "flag"
+    name: "OF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "SF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "ZF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "AF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "PF"
+    source: false
+    destination: true
+  operation: "op1['value'] -= 1"
+- name: dec
+  operands:
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: true
+    destination: true
+  hidden_operands:
+  - class: "flag"
+    name: "OF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "SF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "ZF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "AF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "PF"
+    source: false
+    destination: true
+- name: imul
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "CF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "OF"
+    source: false
+    destination: true
+- name: imul
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: true
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "CF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "OF"
+    source: false
+    destination: true
+- name: inc
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: true
+  hidden_operands:
+  - class: "flag"
+    name: "OF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "SF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "ZF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "AF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "PF"
+    source: false
+    destination: true
+  operation: "op1['value'] += 1"
+- name: inc
+  operands:
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: true
+    destination: true
+  hidden_operands:
+  - class: "flag"
+    name: "OF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "SF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "ZF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "AF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "PF"
+    source: false
+    destination: true
+- name: lea
+  operands:
+  - class: register
+    name: "gpr"
+    source: false
+    destination: true
+      # TODO
+      #operation: "op2['value'] = None if None in [op1['offset'], op1['base']] else op1['offset'] + op1['base'] + op1['index'] * op1['scale']"
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: true
+    destination: false
+- name: ldmxcsr
+  operands:
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: true
+    destination: false
+      # TODO sets MXCSR
+- name: mov
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: false
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  operation: "op2['name'] = op1['name']; op2['value'] = op1['value']"
+- name: [maxpd, maxps, maxsd, maxss, minpd, minps, minsd, minss]
+  operands:
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: false
+- name: mulsd
+  operands:
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: false
+- name: mulss
+  operands:
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: false
+- name: [mulpd, mulps]
+  operands:
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: false
+- name: [packssdw, packsswb, packusdw, packuswb]
+  operands:
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: false
+- name: [packssdw, packsswb, packusdw, packuswb]
+  operands:
+  - class: "register"
+    name: "mm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "mm"
+    source: true
+    destination: false
+- name: [paddb, paddw, paddd, paddq, paddsb, paddsw, paddusb, paddusw]
+  operands:
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: false
+- name: [paddb, paddw, paddd, paddq, paddsb, paddsw, paddusb, paddusw]
+  operands:
+  - class: "register"
+    name: "mm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "mm"
+    source: true
+    destination: false
+- name: [pand, por, pandn]
+  operands:
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: false
+- name: [pxor]
+  breaks_dependency_on_equal_operands: true
+  operands:
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: false
+- name: [pand, por, pandn]
+  operands:
+  - class: "register"
+    name: "mm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "mm"
+    source: true
+    destination: false
+- name: [pxor]
+  breaks_dependency_on_equal_operands: true
+  operands:
+  - class: "register"
+    name: "mm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "mm"
+    source: true
+    destination: false
+- name: [pavgb, pavgw]
+  operands:
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: false
+- name: [pavgb, pavgw]
+  operands:
+  - class: "register"
+    name: "mm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "mm"
+    source: true
+    destination: false
+- name: [pcmpeqb, pcmpeqw, pcmpeqd, pcmpeqq]
+  operands:
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: false
+- name: [pcmpeqb, pcmpeqw, pcmpeqd, pcmpeqq]
+  operands:
+  - class: "register"
+    name: "mm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "mm"
+    source: true
+    destination: false
+- name: [pcmpgtb, pcmpgtw, pcmpgtd, pcmpgtq]
+  operands:
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: false
+- name: [pcmpgtb, pcmpgtw, pcmpgtd, pcmpgtq]
+  operands:
+  - class: "register"
+    name: "mm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "mm"
+    source: true
+    destination: false
+- name: pmaddubsw
+  operands:
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: false
+- name: pmaddubsw
+  operands:
+  - class: "register"
+    name: "mm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "mm"
+    source: true
+    destination: false
+- name: pmaddwd
+  operands:
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: false
+- name: pmaddwd
+  operands:
+  - class: "register"
+    name: "mm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "mm"
+    source: true
+    destination: false
+- name: [pmaxsb, pmaxsw, pmaxsd, pmaxsq]
+  operands:
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: false
+- name: [pmaxsb, pmaxsw, pmaxsd, pmaxsq]
+  operands:
+  - class: "register"
+    name: "mm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "mm"
+    source: true
+    destination: false
+- name: [pmaxub, pmaxuw, pmaxud, pmaxuq]
+  operands:
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: false
+- name: [pmaxub, pmaxuw]
+  operands:
+  - class: "register"
+    name: "mm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "mm"
+    source: true
+    destination: false
+- name: [pminsb, pminsw, pminsd, pminsq]
+  operands:
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: false
+- name: [pminsb, pminsw, pminsd, pminsq]
+  operands:
+  - class: "register"
+    name: "mm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "mm"
+    source: true
+    destination: false
+- name: [pminub, pminuw, pminud, pminuq]
+  operands:
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: false
+- name: [pminub, pminuw]
+  operands:
+  - class: "register"
+    name: "mm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "mm"
+    source: true
+    destination: false
+- name: pmuldq
+  operands:
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: false
+- name: [pmulhrsw, pmulhuw, pmulhw, pmullw]
+  operands:
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: false
+- name: [pmulhrsw, pmulhuw, pmulhw, pmullw]
+  operands:
+  - class: "register"
+    name: "mm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "mm"
+    source: true
+    destination: false
+- name: pmuludq
+  operands:
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: false
+- name: pmuludq
+  operands:
+  - class: "register"
+    name: "mm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "mm"
+    source: true
+    destination: false
+- name: psadbw
+  operands:
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: false
+- name: psadbw
+  operands:
+  - class: "register"
+    name: "mm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "mm"
+    source: true
+    destination: false
+- name: pshufb
+  operands:
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: false
+- name: pshufb
+  operands:
+  - class: "register"
+    name: "mm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "mm"
+    source: true
+    destination: false
+- name: [psignb, psignw, psignd]
+  operands:
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: false
+- name: [psignb, psignw, psignd]
+  operands:
+  - class: "register"
+    name: "mm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "mm"
+    source: true
+    destination: false
+- name: [psllw, pslld, psllq]
+  operands:
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: false
+- name: [psllw, pslld, psllq]
+  operands:
+  - class: "register"
+    name: "mm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "mm"
+    source: true
+    destination: false
+- name: [psllw, pslld, psllq]
+  operands:
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: true
+  - class: "immediate"
+    imd: "int"
+    source: true
+    destination: false
+- name: [psllw, pslld, psllq]
+  operands:
+  - class: "register"
+    name: "mm"
+    source: true
+    destination: true
+  - class: "immediate"
+    imd: "int"
+    source: true
+    destination: false
+- name: pslldq
+  operands:
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: true
+  - class: "immediate"
+    imd: "int"
+    source: true
+    destination: false
+- name: [psraw, psrad, psraq]
+  operands:
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: false
+- name: [psraw, psrad, psraq]
+  operands:
+  - class: "register"
+    name: "mm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "mm"
+    source: true
+    destination: false
+- name: [psraw, psrad, psraq]
+  operands:
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: true
+  - class: "immediate"
+    imd: "int"
+    source: true
+    destination: false
+- name: [psraw, psrad, psraq]
+  operands:
+  - class: "register"
+    name: "mm"
+    source: true
+    destination: true
+  - class: "immediate"
+    imd: "int"
+    source: true
+    destination: false
+- name: [psrlw, psrld, psrlq]
+  operands:
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: false
+- name: [psrlw, psrld, psrlq]
+  operands:
+  - class: "register"
+    name: "mm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "mm"
+    source: true
+    destination: false
+- name: [psrlw, psrld, psrlq]
+  operands:
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: true
+  - class: "immediate"
+    imd: "int"
+    source: true
+    destination: false
+- name: [psrlw, psrld, psrlq]
+  operands:
+  - class: "register"
+    name: "mm"
+    source: true
+    destination: true
+  - class: "immediate"
+    imd: "int"
+    source: true
+    destination: false
+- name: psrldq
+  operands:
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: true
+  - class: "immediate"
+    imd: "int"
+    source: true
+    destination: false
+- name: [psubb, psubw, psubd, psubq]
+  operands:
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: false
+- name: [psubb, psubw, psubd, psubq]
+  operands:
+  - class: "register"
+    name: "mm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "mm"
+    source: true
+    destination: false
+- name: [psubsb, psubsw]
+  operands:
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: false
+- name: [psubsb, psubsw]
+  operands:
+  - class: "register"
+    name: "mm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "mm"
+    source: true
+    destination: false
+- name: [psubusb, psubusw]
+  operands:
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: false
+- name: [psubusb, psubusw]
+  operands:
+  - class: "register"
+    name: "mm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "mm"
+    source: true
+    destination: false
+- name: [punpckhbw, punpckhwd, punpckhdq, punpckhqdq]
+  operands:
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: false
+- name: [punpckhbw, punpckhwd, punpckhdq, punpckhqdq]
+  operands:
+  - class: "register"
+    name: "mm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "mm"
+    source: true
+    destination: false
+- name: [punpcklbw, punpcklwd, punpckldq, punpcklqdq]
+  operands:
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: false
+- name: [punpcklbw, punpcklwd, punpckldq, punpcklqdq]
+  operands:
+  - class: "register"
+    name: "mm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "mm"
+    source: true
+    destination: false
+- name: [sha1msg2, sha1nexte]
+  operands:
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: false
+- name: push
+  operands:
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "memory"
+    base: {name: 'rsp'}
+    offset:
+    index:
+    scale: 1
+    source: false
+    destination: true
+  - class: "register"
+    name: "rsp"
+    source: true
+    destination: true
+- name: push
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "memory"
+    base: {name: 'rsp'}
+    offset:
+    index:
+    scale: 1
+    source: false
+    destination: true
+  - class: "register"
+    name: "rsp"
+    source: true
+    destination: true
+- name: pop
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: false
+    destination: true
+  hidden_operands:
+  - class: "memory"
+    base: {name: 'rsp'}
+    offset:
+    index:
+    scale: 1
+    source: true
+    destination: false
+  - class: "register"
+    name: "rsp"
+    source: true
+    destination: true
+- name: pushfq
+  operands: []
+  hidden_operands:
+  - class: "memory"
+    base: {name: 'rsp'}
+    offset:
+    index:
+    scale: 1
+    source: false
+    destination: true
+  - class: "register"
+    name: "rsp"
+    source: true
+    destination: true
+        # All of EFLAGS and RFLAGS, without VM and RF
+  - class: "flag"
+    name: "CF"
+    source: true
+    destination: false
+  - class: "flag"
+    name: "PF"
+    source: true
+    destination: false
+  - class: "flag"
+    name: "AF"
+    source: true
+    destination: false
+  - class: "flag"
+    name: "ZF"
+    source: true
+    destination: false
+  - class: "flag"
+    name: "SF"
+    source: true
+    destination: false
+  - class: "flag"
+    name: "TF"
+    source: true
+    destination: false
+  - class: "flag"
+    name: "IF"
+    source: true
+    destination: false
+  - class: "flag"
+    name: "DF"
+    source: true
+    destination: false
+  - class: "flag"
+    name: "OF"
+    source: true
+    destination: false
+  - class: "flag"
+    name: "IOPL"
+    source: true
+    destination: false
+  - class: "flag"
+    name: "NT"
+    source: true
+    destination: false
+  - class: "flag"
+    name: "AC"
+    source: true
+    destination: false
+  - class: "flag"
+    name: "VIF"
+    source: true
+    destination: false
+  - class: "flag"
+    name: "VIP"
+    source: true
+    destination: false
+  - class: "flag"
+    name: "ID"
+    source: true
+    destination: false
+- name: [sar, sal, shl, shr]
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: true
+- name: sbb
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "OF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "SF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "ZF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "AF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "PF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "CF"
+    source: true
+    destination: true
+  operation: "op2['value'] -= (op1['value'])"     # + CF['value'])" TODO
+- name: sub
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: true
+  - class: "immediate"
+    imd: "int"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "OF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "SF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "ZF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "AF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "PF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "CF"
+    source: false
+    destination: true
+  operation: "op2['value'] -= op1['value']"
+- name: sub
+  breaks_dependency_on_equal_operands: true
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "OF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "SF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "ZF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "AF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "PF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "CF"
+    source: false
+    destination: true
+- name: sub
+  operands:
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: true
+    destination: true
+  - class: "immediate"
+    imd: "int"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "OF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "SF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "ZF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "AF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "PF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "CF"
+    source: false
+    destination: true
+- name: sub
+  operands:
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: true
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "OF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "SF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "ZF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "AF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "PF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "CF"
+    source: false
+    destination: true
+- name: [subsd, subpd]
+  operands:
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: false
+- name: [subss, subps]
+  operands:
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: false
+- name: test
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "AF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "SF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "ZF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "PF"
+    source: false
+    destination: true
+- name: test
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "AF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "SF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "ZF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "PF"
+    source: false
+    destination: true
+- name: test
+  operands:
+  - class: "immediate"
+    imd: "int"
+    source: true
+    destination: false
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "AF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "SF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "ZF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "PF"
+    source: false
+    destination: true
+- name: test
+  operands:
+  - class: "immediate"
+    imd: "int"
+    source: true
+    destination: false
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "AF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "SF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "ZF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "PF"
+    source: false
+    destination: true
+- name: [unpcklps, unpcklpd]
+  operands:
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: false
+- name: vldmxcsr
+  operands:
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: true
+    destination: false
+      # TODO sets MXCSR
+- name: [vfmadd132pd, vfmadd213pd, vfmadd231pd]
+  operands:
+  - class: "register"
+    name: "*"
+    source: true
+    destination: true
+  - class: "register"
+    name: "*"
+    source: true
+    destination: false
+  - class: "register"
+    name: "*"
+    source: true
+    destination: false
+- name: [vfmadd132ps, vfmadd213ps, vfmadd231ps]
+  operands:
+  - class: "register"
+    name: "*"
+    source: true
+    destination: true
+  - class: "register"
+    name: "*"
+    source: true
+    destination: false
+  - class: "register"
+    name: "*"
+    source: true
+    destination: false
+- name: [vfmadd132sd, vfmadd213sd, vfmadd231sd]
+  operands:
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: false
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: false
+- name: [vfmadd132ss, vfmadd213ss, vfmadd231ss]
+  operands:
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: false
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: false
+- name: [vfmaddsub132pd, vfmaddsub213pd, vfmaddsub231pd]
+  operands:
+  - class: "register"
+    name: "*"
+    source: true
+    destination: true
+  - class: "register"
+    name: "*"
+    source: true
+    destination: false
+  - class: "register"
+    name: "*"
+    source: true
+    destination: false
+- name: [vfmaddsub132ps, vfmaddsub213ps, vfmaddsub231ps]
+  operands:
+  - class: "register"
+    name: "*"
+    source: true
+    destination: true
+  - class: "register"
+    name: "*"
+    source: true
+    destination: false
+  - class: "register"
+    name: "*"
+    source: true
+    destination: false
+- name: [vfmsub132pd, vfmsub213pd, vfmsub231pd]
+  operands:
+  - class: "register"
+    name: "*"
+    source: true
+    destination: true
+  - class: "register"
+    name: "*"
+    source: true
+    destination: false
+  - class: "register"
+    name: "*"
+    source: true
+    destination: false
+- name: [vfmsub132ps, vfmsub213ps, vfmsub231ps]
+  operands:
+  - class: "register"
+    name: "*"
+    source: true
+    destination: true
+  - class: "register"
+    name: "*"
+    source: true
+    destination: false
+  - class: "register"
+    name: "*"
+    source: true
+    destination: false
+- name: [vfmsub132sd, vfmsub213sd, vfmsub231sd]
+  operands:
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: false
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: false
+- name: [vfmsub132ss, vfmsub213ss, vfmsub231ss]
+  operands:
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: false
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: false
+- name: [vfmsubadd132pd, vfmsubadd213pd, vfmsubadd231pd]
+  operands:
+  - class: "register"
+    name: "*"
+    source: true
+    destination: true
+  - class: "register"
+    name: "*"
+    source: true
+    destination: false
+  - class: "register"
+    name: "*"
+    source: true
+    destination: false
+- name: [vfmsubadd132ps, vfmsubadd213ps, vfmsubadd231ps]
+  operands:
+  - class: "register"
+    name: "*"
+    source: true
+    destination: true
+  - class: "register"
+    name: "*"
+    source: true
+    destination: false
+  - class: "register"
+    name: "*"
+    source: true
+    destination: false
+- name: [vptest, ptest]
+  operands:
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: false
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "AF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "SF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "ZF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "PF"
+    source: false
+    destination: true
+- name: vptest
+  operands:
+  - class: "register"
+    name: "ymm"
+    source: true
+    destination: false
+  - class: "register"
+    name: "ymm"
+    source: true
+    destination: false
+  hidden_operands:
+  - class: "flag"
+    name: "AF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "SF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "ZF"
+    source: false
+    destination: true
+  - class: "flag"
+    name: "PF"
+    source: false
+    destination: true
+- name: vzeroall
+  breaks_dependency_on_equal_operands: true
+  operands: []
+  hidden_operands:
+  - class: "register"
+    name: "ymm0"
+    source: false
+    destination: true
+  - class: "register"
+    name: "ymm1"
+    source: false
+    destination: true
+  - class: "register"
+    name: "ymm2"
+    source: false
+    destination: true
+  - class: "register"
+    name: "ymm3"
+    source: false
+    destination: true
+  - class: "register"
+    name: "ymm4"
+    source: false
+    destination: true
+  - class: "register"
+    name: "ymm5"
+    source: false
+    destination: true
+  - class: "register"
+    name: "ymm6"
+    source: false
+    destination: true
+  - class: "register"
+    name: "ymm7"
+    source: false
+    destination: true
+  - class: "register"
+    name: "ymm8"
+    source: false
+    destination: true
+  - class: "register"
+    name: "ymm9"
+    source: false
+    destination: true
+  - class: "register"
+    name: "ymm10"
+    source: false
+    destination: true
+  - class: "register"
+    name: "ymm11"
+    source: false
+    destination: true
+  - class: "register"
+    name: "ymm12"
+    source: false
+    destination: true
+  - class: "register"
+    name: "ymm13"
+    source: false
+    destination: true
+  - class: "register"
+    name: "ymm14"
+    source: false
+    destination: true
+  - class: "register"
+    name: "ymm15"
+    source: false
+    destination: true
+- name: vzeroupper
+  operands: []
+      # TODO not quite correct:
+      # only upper half is zeroed, not the xmm part
+  hidden_operands:
+  - class: "register"
+    name: "ymm0"
+    source: false
+    destination: true
+  - class: "register"
+    name: "ymm1"
+    source: false
+    destination: true
+  - class: "register"
+    name: "ymm2"
+    source: false
+    destination: true
+  - class: "register"
+    name: "ymm3"
+    source: false
+    destination: true
+  - class: "register"
+    name: "ymm4"
+    source: false
+    destination: true
+  - class: "register"
+    name: "ymm5"
+    source: false
+    destination: true
+  - class: "register"
+    name: "ymm6"
+    source: false
+    destination: true
+  - class: "register"
+    name: "ymm7"
+    source: false
+    destination: true
+  - class: "register"
+    name: "ymm8"
+    source: false
+    destination: true
+  - class: "register"
+    name: "ymm9"
+    source: false
+    destination: true
+  - class: "register"
+    name: "ymm10"
+    source: false
+    destination: true
+  - class: "register"
+    name: "ymm11"
+    source: false
+    destination: true
+  - class: "register"
+    name: "ymm12"
+    source: false
+    destination: true
+  - class: "register"
+    name: "ymm13"
+    source: false
+    destination: true
+  - class: "register"
+    name: "ymm14"
+    source: false
+    destination: true
+  - class: "register"
+    name: "ymm15"
+    source: false
+    destination: true
+- name: [unpckhps, unpckhpd]
+  operands:
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: false
+- name: [andps, andpd, andnps, andnpd, orps, orpd]
+  operands:
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: false
+- name: [xorps, xorpd]
+  breaks_dependency_on_equal_operands: true
+  operands:
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: true
+  - class: "register"
+    name: "xmm"
+    source: true
+    destination: false
+- name: [shl, shr, shlq, shrq]
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: true
+  - class: "immediate"
+    imd: "int"
+    source: true
+    destination: false
+- name: [vxorpd, vxorps]
+  breaks_dependency_on_equal_operands: true
+  operands:
+  - class: "register"
+    name: "*"
+    source: false
+    destination: true
+  - class: "register"
+    name: "*"
+    source: true
+    destination: false
+  - class: "register"
+    name: "*"
+    source: true
+    destination: false
+- name: xor
+  operands:
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: true
+    destination: false
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+- name: xor
+  operands:
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: true
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+- name: xor
+  operands:
+  - class: "memory"
+    base: "*"
+    offset: "*"
+    index: "*"
+    scale: "*"
+    source: true
+    destination: true
+  - class: "immediate"
+    imd: "int"
+    source: true
+    destination: false
+- name: xor
+  operands:
+  - class: "immediate"
+    imd: "int"
+    source: true
+    destination: false
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false
+- name: xor
+  breaks_dependency_on_equal_operands: true
+  operands:
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: true
+  - class: "register"
+    name: "gpr"
+    source: true
+    destination: false

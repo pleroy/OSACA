@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 
+import os
 import pyparsing as pp
 import re
+import ruamel
 import string
 
 from osaca.parser import BaseParser
@@ -19,6 +21,41 @@ from osaca.parser.register import RegisterOperand
 #   Intel Architecture Code Analyzer User's Guide, https://www.intel.com/content/dam/develop/external/us/en/documents/intel-architecture-code-analyzer-3-0-users-guide-157552.pdf.
 class ParserX86Intel(BaseParser):
     _instance = None
+
+    # A handy utility for converting x86.yml to a form that has the destination first.
+    @staticmethod
+    def convertYAML():
+        MODULE_DATA_DIR = os.path.join(
+            os.path.dirname(os.path.split(os.path.abspath(__file__))[0]), "data/"
+        )
+
+        yaml = ruamel.yaml.YAML()
+        yaml.preserve_quotes = True
+        with open(os.path.join(MODULE_DATA_DIR, "isa/x86.yml"), "r", encoding="utf8") as fin:
+            data = yaml.load(fin)
+
+            for iform in data["instruction_forms"]:
+                has_destination = False
+                has_single_destination_at_end = False
+                for o in iform["operands"]:
+                    if o.get("source", False):
+                        if has_destination:
+                            has_single_destination_at_end = False
+                    if o.get("destination", False):
+                        if has_destination:
+                            has_single_destination_at_end = False
+                        else:
+                            has_destination = True
+                            has_single_destination_at_end = True
+                if has_single_destination_at_end:
+                    sources = iform["operands"][:-1]
+                    destination = iform["operands"][-1]
+                    sources.insert(0, destination)
+                    iform["operands"] = sources
+
+            with open(os.path.join(MODULE_DATA_DIR, "isa/x86_intel.yml"), "w", encoding="utf8") as fout:
+                print(fout.name)
+                yaml.dump(data, fout)
 
     # Singleton pattern, as this is created very many times.
     def __new__(cls):

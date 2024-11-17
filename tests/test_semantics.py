@@ -104,7 +104,7 @@ class TestSemanticTools(unittest.TestCase):
         cls.semantics_csx_intel = ArchSemantics(
             cls.parser_x86_intel,
             cls.machine_model_csx,
-            path_to_yaml=os.path.join(cls.MODULE_DATA_DIR, "isa/x86.yml"),
+            path_to_yaml=os.path.join(cls.MODULE_DATA_DIR, "isa/x86_intel.yml"),
         )
         cls.semantics_aarch64 = ISASemantics(cls.parser_AArch64)
         cls.semantics_tx2 = ArchSemantics(
