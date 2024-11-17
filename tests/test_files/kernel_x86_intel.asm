@@ -1,3 +1,11 @@
+r$1 = 4
+i$2 = 36
+a$ = 288
+b$ = 296
+c$ = 304
+d$ = 312
+repeat$ = 320
+cur_elements$ = 328
 ; Line 27
 	mov	DWORD PTR i$2[rbp], 0
 	jmp	SHORT $LN7@kernel
