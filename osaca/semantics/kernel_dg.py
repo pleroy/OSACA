@@ -280,10 +280,10 @@ class KernelDG(nx.DiGraph):
             # TODO instructions before must be considered as well, if they update registers
             # not used by insruction_form. E.g., validation/build/A64FX/gcc/O1/gs-2d-5pt.marked.s
             register_changes = self._update_reg_changes(instruction_form)
-            # print("FROM", instruction_form.line, register_changes)
+            print("FROM", instruction_form.line, register_changes)
             for i, instr_form in enumerate(instructions):
                 self._update_reg_changes(instr_form, register_changes)
-                # print("  TO", instr_form.line, register_changes)
+                print("  TO", instr_form.line, register_changes)
                 if isinstance(dst, RegisterOperand):
                     # read of register
                     if self.is_read(dst, instr_form):
