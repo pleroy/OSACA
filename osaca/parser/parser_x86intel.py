@@ -26,6 +26,7 @@ class ParserX86Intel(BaseParser):
 
     def __init__(self):
         super().__init__()
+        self._equ = {}
 
     def isa(self):
         return "x86"
@@ -538,6 +539,10 @@ class ParserX86Intel(BaseParser):
             name=directive.name,
             parameters=parameters or None
         )
+        # Interpret the "=" directives because the generated assembly is full of symbols that are
+        # defined there.
+        if directive.name == "=":
+            self._equ[parameters[0]] = parameters[1]
         return directive_new, directive.get("comment")
 
     def process_register(self, operand):
@@ -612,33 +617,36 @@ class ParserX86Intel(BaseParser):
     def process_immediate(self, immediate):
         """Post-process immediate operand"""
         if "identifier" in immediate:
-            # actually an identifier, change declaration
+            # Actually an identifier, change declaration.
             return self.process_identifier(immediate.identifier)
         new_immediate = ImmediateOperand(value=immediate.value)
         new_immediate.value = self.normalize_imd(new_immediate)
         return new_immediate
 
     def process_identifier(self, identifier):
+        if identifier.name in self._equ:
+            # Actually an immediate, change declaration.
+            new_immediate = ImmediateOperand(
+                identifier=identifier.name,
+                value=self._equ[identifier.name]
+            )
+            new_immediate.value = self.normalize_imd(new_immediate)
+            return new_immediate
         return IdentifierOperand(name=identifier.name)
 
     def normalize_imd(self, imd):
         """Normalize immediate to decimal based representation"""
-        if isinstance(imd, IdentifierOperand):
-            return imd
-        if imd.value:
-            if isinstance(imd.value, str):
-                if '.' in imd.value:
-                    return float(imd.value)
-                # Now parse depending on the base.
-                base = {'B': 2, 'O': 8, 'H': 16}.get(imd.value[-1], 10)
-                value = 0
-                negative = imd.value[0] == '-'
-                start = +negative
-                stop = len(imd.value) if base == 10 else -1
-                for c in imd.value[start:stop]:
-                    value = value * base + int(c, base)
-                return -value if negative else value
-            else:
-                return imd.value
-        # identifier
-        return imd
+        if isinstance(imd.value, str):
+            if '.' in imd.value:
+                return float(imd.value)
+            # Now parse depending on the base.
+            base = {'B': 2, 'O': 8, 'H': 16}.get(imd.value[-1], 10)
+            value = 0
+            negative = imd.value[0] == '-'
+            start = +negative
+            stop = len(imd.value) if base == 10 else -1
+            for c in imd.value[start:stop]:
+                value = value * base + int(c, base)
+            return -value if negative else value
+        else:
+            return imd.value
