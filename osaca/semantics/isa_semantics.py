@@ -55,11 +55,6 @@ class ISASemantics(object):
         isa_data = self._isa_model.get_instruction(
             instruction_form.mnemonic, instruction_form.operands
         )
-        if not isa_data:
-            isa_data = self._isa_model.get_instruction(
-                self._parser.normalize_mnemonic(instruction_form.mnemonic),
-                instruction_form.operands
-            )
         operands = instruction_form.operands
         op_dict = {}
 
@@ -76,11 +71,6 @@ class ISASemantics(object):
                 isa_data_reg = self._isa_model.get_instruction(
                     instruction_form.mnemonic, operands_reg
                 )
-                if not isa_data_reg:
-                    isa_data_reg = self._isa_model.get_instruction(
-                        self._parser.normalize_mnemonic(instruction_form.mnemonic),
-                        operands_reg
-                    )
                 if isa_data_reg:
                     assign_default = False
                     op_dict = self._apply_found_ISA_data(isa_data_reg, operands)
@@ -148,11 +138,6 @@ class ISASemantics(object):
         isa_data = self._isa_model.get_instruction(
             instruction_form.mnemonic, instruction_form.operands
         )
-        if not isa_data:
-            isa_data = self._isa_model.get_instruction(
-                self._parser.normalize_mnemonic(instruction_form.mnemonic),
-                instruction_form.operands
-            )
 
         if only_postindexed:
             for o in instruction_form.operands:

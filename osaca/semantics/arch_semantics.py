@@ -187,11 +187,6 @@ class ArchSemantics(ISASemantics):
             instruction_data = self._machine_model.get_instruction(
                 instruction_form.mnemonic, instruction_form.operands
             )
-            if not instruction_data:
-                instruction_data = self._machine_model.get_instruction(
-                    self._parser.normalize_mnemonic(instruction_form.mnemonic),
-                    instruction_form.operands
-                )
             if instruction_data:
                 # instruction form in DB
                 (
@@ -215,11 +210,6 @@ class ArchSemantics(ISASemantics):
                     operands = self.substitute_mem_address(instruction_form.operands)
                     instruction_data_reg = self._machine_model.get_instruction(
                         instruction_form.mnemonic, operands
-                    )
-                    if not instruction_data_reg:
-                        instruction_data_reg = self._machine_model.get_instruction(
-                            self._parser.normalize_mnemonic(instruction_form.mnemonic),
-                            operands
                     )
                     if instruction_data_reg:
                         assign_unknown = False

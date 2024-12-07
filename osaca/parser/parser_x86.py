@@ -1,3 +1,6 @@
+import re
+import string
+
 from osaca.parser import BaseParser
 
 
