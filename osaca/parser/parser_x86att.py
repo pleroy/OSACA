@@ -13,6 +13,7 @@ from osaca.parser.label import LabelOperand
 from osaca.parser.register import RegisterOperand
 from osaca.parser.identifier import IdentifierOperand
 from osaca.parser.immediate import ImmediateOperand
+from osaca.semantics.hw_model import MachineModel
 
 
 class ParserX86ATT(BaseParser):
@@ -64,6 +65,24 @@ class ParserX86ATT(BaseParser):
                 directive_id=DirectiveOperand(name="byte", parameters=["100", "103", "144"])
             )
         ]
+
+    def normalize_instruction_form(self, instruction_form, machine_model: MachineModel):
+        """
+        If the instruction doesn't exist in the machine model, normalize it by dropping the GAS
+        suffix.
+        """
+        mnemonic = instruction_form.mnemonic
+        model = machine_model.get_instruction(mnemonic, len(instruction_form.operands))
+        if not model:
+            # Check for instruction without GAS suffix.
+            if mnemonic[-1] in self.GAS_SUFFIXES:
+                mnemonic = mnemonic[:-1]
+                model = machine_model.get_instruction(mnemonic, len(instruction_form.operands))
+                if model:
+                    instruction_form.mnemonic = mnemonic
+                else:
+                    raise KeyError("Not found " + instruction_form.mnemonic)
+        return instruction_form
 
     def construct_parser(self):
         """Create parser for x86 AT&T ISA."""
@@ -418,22 +437,6 @@ class ParserX86ATT(BaseParser):
         # nothing to do
         return register.name
 
-    def get_regular_source_operands(self, instruction_form):
-        """Get source operand of given instruction form assuming regular src/dst behavior."""
-        # if there is only one operand, assume it is a source operand
-        if len(instruction_form.operands) == 1:
-            return [instruction_form.operands[0]]
-        # return all but last operand
-        return [op for op in instruction_form.operands[0:-1]]
-
-    def get_regular_destination_operands(self, instruction_form):
-        """Get destination operand of given instruction form assuming regular src/dst behavior."""
-        # if there is only one operand, assume no destination
-        if len(instruction_form.operands) == 1:
-            return []
-        # return last operand
-        return instruction_form.operands[-1:]
-
     def normalize_imd(self, imd):
         """Normalize immediate to decimal based representation"""
         if isinstance(imd, IdentifierOperand):
@@ -446,18 +449,6 @@ class ParserX86ATT(BaseParser):
                 return imd.value
         # identifier
         return imd
-
-    def normalize_mnemonic(self, mnemonic):
-        """
-        Normalize a mnemonic by dropping the suffix.
-
-        :param str mnemonic
-        :return str
-        """
-        # Check for instruction without GAS suffix.
-        if mnemonic[-1] in self.GAS_SUFFIXES:
-            return mnemonic[:-1]
-        return mnemonic
 
     def is_flag_dependend_of(self, flag_a, flag_b):
         """Check if ``flag_a`` is dependent on ``flag_b``"""

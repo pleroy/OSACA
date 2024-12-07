@@ -12,6 +12,7 @@ from osaca.parser.instruction_form import InstructionForm
 from osaca.parser.label import LabelOperand
 from osaca.parser.memory import MemoryOperand
 from osaca.parser.register import RegisterOperand
+from osaca.semantics.hw_model import MachineModel
 
 # References:
 #   ASM386 Assembly Language Reference, document number 469165-003, https://mirror.math.princeton.edu/pub/oldlinux/Linux.old/Ref-docs/asm-ref.pdf.
@@ -70,6 +71,34 @@ class ParserX86Intel(BaseParser):
                 ]
             ),
         ]
+
+    def normalize_instruction_form(self, instruction_form, machine_model: MachineModel):
+        """
+        If the model indicates that this instruction has a single destination that is the last
+        operand, move the first operand to the last position.  This effectively converts the Intel
+        syntax to the AT&T one.
+        """
+        model = machine_model.get_instruction(instruction_form.mnemonic,
+                                              len(instruction_form.operands))
+
+        has_destination = False
+        has_single_destination_at_end = False
+        for o in model["operands"]:
+            if o.get("source", False):
+                if has_destination:
+                    has_single_destination_at_end = False
+            if o.get("destination", False):
+                if has_destination:
+                    has_single_destination_at_end = False
+                else:
+                    has_destination = True
+                    has_single_destination_at_end = True
+        if has_single_destination_at_end:
+            sources = instruction_form["operands"][:-1]
+            destination = instruction_form["operands"][-1]
+            sources.insert(0, destination)
+            instruction_form["operands"] = sources
+        return instruction_form
 
     def construct_parser(self):
         """Create parser for x86 Intel ISA."""
@@ -674,21 +703,6 @@ class ParserX86Intel(BaseParser):
             new_immediate.value = self.normalize_imd(new_immediate)
             return new_immediate
         return IdentifierOperand(name=identifier.name)
-
-    def get_regular_source_operands(self, instruction_form):
-        """Get source operand of given instruction form assuming regular src/dst behavior."""
-        # if there is only one operand, assume it is a source operand
-        if len(instruction_form.operands) == 1:
-            return [instruction_form.operands[0]]
-        return [op for op in instruction_form.operands[1:]]
-
-    def get_regular_destination_operands(self, instruction_form):
-        """Get destination operand of given instruction form assuming regular src/dst behavior."""
-        # if there is only one operand, assume no destination
-        if len(instruction_form.operands) == 1:
-            return []
-        # return first operand
-        return instruction_form.operands[:1]
 
     def normalize_imd(self, imd):
         """Normalize immediate to decimal based representation"""

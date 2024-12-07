@@ -3,6 +3,8 @@
 import operator
 import re
 
+from osaca.semantics.hw_model import MachineModel
+
 
 class BaseParser(object):
     # Identifiers for operand types
@@ -43,6 +45,10 @@ class BaseParser(object):
 
     def end_marker(self):
         # Done in derived classes
+        raise NotImplementedError
+
+    # Performs all the normalization needed to match the instruction to the ISO/arch model.
+    def normalize_instruction_form(self, instruction_form, machine_model: MachineModel):
         raise NotImplementedError
 
     @staticmethod
@@ -125,16 +131,7 @@ class BaseParser(object):
     def get_full_reg_name(self, register):
         raise NotImplementedError
 
-    def get_regular_source_operands(self, instruction_form):
-        raise NotImplementedError
-
-    def get_regular_destination_operands(self, instruction_form):
-        raise NotImplementedError
-
     def normalize_imd(self, imd):
-        raise NotImplementedError
-
-    def normalize_mnemonic(self, mnemonic):
         raise NotImplementedError
 
     def is_reg_dependend_of(self, reg_a, reg_b):

@@ -13,6 +13,7 @@ from osaca.parser.identifier import IdentifierOperand
 from osaca.parser.immediate import ImmediateOperand
 from osaca.parser.condition import ConditionOperand
 from osaca.parser.prefetch import PrefetchOperand
+from osaca.semantics.hw_model import MachineModel
 
 
 class ParserAArch64(BaseParser):
@@ -51,6 +52,25 @@ class ParserAArch64(BaseParser):
                 directive_id=DirectiveOperand(name="byte", parameters=["213", "3", "32", "31"])
             )
         ]
+
+    def normalize_instruction_form(self, instruction_form, machine_model: MachineModel):
+        """
+        If the instruction doesn't exist in the machine model, normalize it by dropping the shape
+        suffix.
+        """
+        mnemonic = instruction_form.mnemonic
+        model = machine_model.get_instruction(mnemonic, len(instruction_form.operands))
+        if not model:
+            if "." in mnemonic:
+                # Check for instruction without shape/cc suffix.
+                suffix_start = mnemonic.index(".")
+                mnemonic = mnemonic[:suffix_start]
+                model = machine_model.get_instruction(mnemonic, len(instruction_form.operands))
+                if model:
+                    instruction_form.mnemonic = mnemonic
+                else:
+                    raise KeyError("Not found " + instruction_form.mnemonic)
+        return instruction_form
 
     def construct_parser(self):
         """Create parser for ARM AArch64 ISA."""
@@ -613,21 +633,6 @@ class ParserAArch64(BaseParser):
             name += "[" + str(register.index) + "]"
         return name
 
-    def get_regular_source_operands(self, instruction_form):
-        """Get source operand of given instruction form assuming regular src/dst behavior."""
-        # if there is only one operand, assume it is a source operand
-        if len(instruction_form.operands) == 1:
-            return [instruction_form.operands[0]]
-        return [op for op in instruction_form.operands[1:]]
-
-    def get_regular_destination_operands(self, instruction_form):
-        """Get destination operand of given instruction form assuming regular src/dst behavior."""
-        # if there is only one operand, assume no destination
-        if len(instruction_form.operands) == 1:
-            return []
-        # return first operand
-        return instruction_form.operands[:1]
-
     def normalize_imd(self, imd):
         """Normalize immediate to decimal based representation"""
         if isinstance(imd, IdentifierOperand):
@@ -644,19 +649,6 @@ class ParserAArch64(BaseParser):
                 return imd.value
         # identifier
         return imd
-
-    def normalize_mnemonic(self, mnemonic):
-        """
-        Normalize a mnemonic by dropping the suffix.
-
-        :param str mnemonic
-        :return str
-        """
-        if "." in mnemonic:
-            # Check for instruction without shape/cc suffix.
-            suffix_start = mnemonic.index(".")
-            return mnemonic[:suffix_start]
-        return mnemonic
 
     def ieee_to_float(self, ieee_val):
         """Convert IEEE representation to python float"""
