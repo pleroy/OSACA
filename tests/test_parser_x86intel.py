@@ -123,7 +123,10 @@ class TestParserX86Intel(unittest.TestCase):
         self.assertEqual(parsed_4.operands[0],
                          RegisterOperand(name="EAX"))
         self.assertEqual(parsed_4.operands[1],
-                         MemoryOperand(offset=IdentifierOperand(name="cur_elements$"),
+                         MemoryOperand(offset=ImmediateOperand(
+                                            identifier="cur_elements$",
+                                            value=328
+                                       ),
                                        base=RegisterOperand(name="RBP")))
 
         self.assertEqual(parsed_5.mnemonic, "mov")
@@ -201,6 +204,20 @@ class TestParserX86Intel(unittest.TestCase):
     def test_parse_file1(self):
         parsed = self.parser.parse_file(self.triad_code)
         self.assertEqual(parsed[0].line_number, 1)
+        # Check specifically that the values of the symbols defined by "=" were correctly
+        # propagated.
+        self.assertEqual(parsed[69],
+                         InstructionForm(mnemonic="mov",
+                                         operands=[MemoryOperand(
+                                                        base=RegisterOperand("RBP"),
+                                                        offset=ImmediateOperand(
+                                                            value=4,
+                                                            identifier="r$1"
+                                                        )
+                                                    ),
+                                                   ImmediateOperand(value=0)],
+                                         line="\tmov\tDWORD PTR r$1[rbp], 0",
+                                         line_number=73))
         # Check a few lines to make sure that we produced something reasonable.
         self.assertEqual(parsed[60],
                          InstructionForm(mnemonic="mov",
