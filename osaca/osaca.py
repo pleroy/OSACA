@@ -11,7 +11,7 @@ from ruamel.yaml import YAML
 
 from osaca.db_interface import import_benchmark_output, sanity_check
 from osaca.frontend import Frontend
-from osaca.parser import BaseParser, ParserAArch64, ParserX86ATT, ParserX86Intel
+from osaca.parser import BaseParser, ParserAArch64, ParserX86, ParserX86ATT, ParserX86Intel
 from osaca.semantics import (
     INSTR_FLAGS,
     ArchSemantics,

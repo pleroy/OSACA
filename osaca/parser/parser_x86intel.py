@@ -4,7 +4,7 @@ import pyparsing as pp
 import re
 import string
 
-from osaca.parser import BaseParser
+from osaca.parser import ParserX86
 from osaca.parser.directive import DirectiveOperand
 from osaca.parser.identifier import IdentifierOperand
 from osaca.parser.immediate import ImmediateOperand
@@ -18,7 +18,7 @@ from osaca.semantics.hw_model import MachineModel
 #   ASM386 Assembly Language Reference, document number 469165-003, https://mirror.math.princeton.edu/pub/oldlinux/Linux.old/Ref-docs/asm-ref.pdf.
 #   Microsoft Macro Assembler BNF Grammar, https://learn.microsoft.com/en-us/cpp/assembler/masm/masm-bnf-grammar?view=msvc-170.
 #   Intel Architecture Code Analyzer User's Guide, https://www.intel.com/content/dam/develop/external/us/en/documents/intel-architecture-code-analyzer-3-0-users-guide-157552.pdf.
-class ParserX86Intel(BaseParser):
+class ParserX86Intel(ParserX86):
     _instance = None
 
     # Singleton pattern, as this is created very many times.
@@ -30,9 +30,6 @@ class ParserX86Intel(BaseParser):
     def __init__(self):
         super().__init__()
         self._equ = {}
-
-    def isa(self):
-        return "x86"
 
     # The IACA manual says: "For For Microsoft* Visual C++ compiler, 64-bit version, use
     # IACA_VC64_START and IACA_VC64_END, instead" (of IACA_START and IACA_END).
@@ -545,45 +542,6 @@ class ParserX86Intel(BaseParser):
             )
         except pp.ParseException:
             return None
-
-    def is_basic_gpr(self, register):
-        """Check if register is a basic general purpose register (ebi, rax, ...)"""
-        if any(char.isdigit() for char in register.name) or any(
-            register.name.lower().startswith(x) for x in ["mm", "xmm", "ymm", "zmm"]
-        ):
-            return False
-        return True
-
-    def is_gpr(self, register):
-        """Check if register is a general purpose register"""
-        if register is None:
-            return False
-        if self.is_basic_gpr(register):
-            return True
-        return re.match(r"R([0-9]+)[DWB]?", register.name, re.IGNORECASE)
-
-    def is_vector_register(self, register):
-        """Check if register is a vector register"""
-        if register is None or register.name is None:
-            return False
-        if register.name.rstrip(string.digits).lower() in [
-            "mm",
-            "xmm",
-            "ymm",
-            "zmm",
-        ]:
-            return True
-        return False
-
-    def get_reg_type(self, register):
-        """Get register type"""
-        if register is None:
-            return False
-        if self.is_gpr(register):
-            return "gpr"
-        elif self.is_vector_register(register):
-            return register.name.rstrip(string.digits).lower()
-        raise ValueError
 
     def process_operand(self, operand):
         """Post-process operand"""

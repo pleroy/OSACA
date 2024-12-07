@@ -11,7 +11,6 @@ from pathlib import Path
 
 import ruamel.yaml
 from osaca import __version__, utils
-from osaca.parser import ParserX86ATT
 from osaca.parser.instruction_form import InstructionForm
 from osaca.parser.operand import Operand
 from osaca.parser.memory import MemoryOperand
@@ -916,7 +915,7 @@ class MachineModel(object):
         if i_reg_name == self.WILDCARD or reg.name == self.WILDCARD:
             return True
         # differentiate between vector registers (mm, xmm, ymm, zmm) and others (gpr)
-        parser_x86 = ParserX86ATT()
+        parser_x86 = ParserX86()
         if parser_x86.is_vector_register(reg):
             if reg.name.rstrip(string.digits).lower() == i_reg_name:
                 # Consider masking and zeroing for AVX512
