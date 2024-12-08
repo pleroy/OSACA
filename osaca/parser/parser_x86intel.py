@@ -706,3 +706,6 @@ class ParserX86Intel(BaseParser):
             return -value if negative else value
         else:
             return imd.value
+
+    def normalize_mnemonic(self, mnemonic):
+        return mnemonic
