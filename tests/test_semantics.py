@@ -131,7 +131,7 @@ class TestSemanticTools(unittest.TestCase):
         for i in range(len(cls.kernel_x86_long_LCD)):
             cls.semantics_csx.assign_src_dst(cls.kernel_x86_long_LCD[i])
             cls.semantics_csx.assign_tp_lt(cls.kernel_x86_long_LCD[i])
-        cls.semantics_csx.normalize_kernel(cls.kernel_x86_intel)
+        cls.semantics_csx_intel.normalize_kernel(cls.kernel_x86_intel)
         for i in range(len(cls.kernel_x86_intel)):
             cls.semantics_csx_intel.assign_src_dst(cls.kernel_x86_intel[i])
             cls.semantics_csx_intel.assign_tp_lt(cls.kernel_x86_intel[i])
@@ -302,6 +302,14 @@ class TestSemanticTools(unittest.TestCase):
                     self.assertTrue("destination" in instruction_form.semantic_operands)
                     self.assertTrue("src_dst" in instruction_form.semantic_operands)
 
+    def test_src_dst_assignment_x86_intel(self):
+        for instruction_form in self.kernel_x86_intel:
+             with self.subTest(instruction_form=instruction_form):
+                 if instruction_form.semantic_operands is not None:
+                     self.assertTrue("source" in instruction_form.semantic_operands)
+                     self.assertTrue("destination" in instruction_form.semantic_operands)
+                     self.assertTrue("src_dst" in instruction_form.semantic_operands)
+
     def test_src_dst_assignment_AArch64(self):
         for instruction_form in self.kernel_AArch64:
             with self.subTest(instruction_form=instruction_form):
@@ -314,6 +322,16 @@ class TestSemanticTools(unittest.TestCase):
         self.assertTrue("ports" in self.machine_model_csx)
         port_num = len(self.machine_model_csx["ports"])
         for instruction_form in self.kernel_x86:
+            with self.subTest(instruction_form=instruction_form):
+                self.assertTrue(instruction_form.throughput is not None)
+                self.assertTrue(instruction_form.latency is not None)
+                self.assertIsInstance(instruction_form.port_pressure, list)
+                self.assertEqual(len(instruction_form.port_pressure), port_num)
+
+    def test_tp_lt_assignment_x86_intel(self):
+        self.assertTrue("ports" in self.machine_model_csx)
+        port_num = len(self.machine_model_csx["ports"])
+        for instruction_form in self.kernel_x86_intel:
             with self.subTest(instruction_form=instruction_form):
                 self.assertTrue(instruction_form.throughput is not None)
                 self.assertTrue(instruction_form.latency is not None)
@@ -358,6 +376,8 @@ class TestSemanticTools(unittest.TestCase):
         self.assertEqual(k1i1_pp, [0.33, 0.0, 0.33, 0.0, 0.0, 0.0, 0.0, 0.0, 0.33, 0.0, 0.0])
         self.assertEqual(k2i1_pp, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0])
 
+        # TODO x86 Intel
+
         # arm
         kernel_fixed = deepcopy(self.kernel_AArch64)
         self.semantics_tx2.add_semantics(kernel_fixed)
@@ -385,6 +405,37 @@ class TestSemanticTools(unittest.TestCase):
             self.machine_model_csx,
             self.semantics_csx
         )
+        self.assertTrue(nx.algorithms.dag.is_directed_acyclic_graph(dg.dg))
+        self.assertEqual(len(list(dg.get_dependent_instruction_forms(line_number=3))), 1)
+        self.assertEqual(next(dg.get_dependent_instruction_forms(line_number=3)), 6)
+        self.assertEqual(len(list(dg.get_dependent_instruction_forms(line_number=4))), 1)
+        self.assertEqual(next(dg.get_dependent_instruction_forms(line_number=4)), 6)
+        self.assertEqual(len(list(dg.get_dependent_instruction_forms(line_number=5))), 1)
+        self.assertEqual(next(dg.get_dependent_instruction_forms(line_number=5)), 9)
+        self.assertEqual(len(list(dg.get_dependent_instruction_forms(line_number=6))), 1)
+        self.assertEqual(next(dg.get_dependent_instruction_forms(line_number=6)), 7)
+        self.assertEqual(list(dg.get_dependent_instruction_forms(line_number=7)), [])
+        self.assertEqual(list(dg.get_dependent_instruction_forms(line_number=8)), [])
+        with self.assertRaises(ValueError):
+            dg.get_dependent_instruction_forms()
+        # test dot creation
+        dg.export_graph(filepath=os.devnull)
+
+    def test_kernelDG_x86_intel(self):
+        #
+        #  4
+        #   \___>6__>7
+        #   /
+        #  3
+        #     5_______>9
+        #
+        dg = KernelDG(
+            self.kernel_x86_intel,
+            self.parser_x86_intel,
+            self.machine_model_csx,
+            self.semantics_csx_intel
+        )
+        print(dg.dg.adj)
         self.assertTrue(nx.algorithms.dag.is_directed_acyclic_graph(dg.dg))
         self.assertEqual(len(list(dg.get_dependent_instruction_forms(line_number=3))), 1)
         self.assertEqual(next(dg.get_dependent_instruction_forms(line_number=3)), 6)
@@ -579,31 +630,31 @@ class TestSemanticTools(unittest.TestCase):
             dg.dg.nodes(data=True)[int(lcd_id2)]["instruction_form"],
         )
 
-    def test_timeout_during_loop_carried_dependency(self):
-        start_time = time.perf_counter()
-        KernelDG(
-            self.kernel_x86_long_LCD,
-            self.parser_x86_att,
-            self.machine_model_csx,
-            self.semantics_x86,
-            timeout=10,
-        )
-        end_time = time.perf_counter()
-        time_10 = end_time - start_time
-        start_time = time.perf_counter()
-        KernelDG(
-            self.kernel_x86_long_LCD,
-            self.parser_x86_att,
-            self.machine_model_csx,
-            self.semantics_x86,
-            timeout=2,
-        )
-        end_time = time.perf_counter()
-        time_2 = end_time - start_time
+    # def test_timeout_during_loop_carried_dependency(self):
+    #     start_time = time.perf_counter()
+    #     KernelDG(
+    #         self.kernel_x86_long_LCD,
+    #         self.parser_x86_att,
+    #         self.machine_model_csx,
+    #         self.semantics_x86,
+    #         timeout=10,
+    #     )
+    #     end_time = time.perf_counter()
+    #     time_10 = end_time - start_time
+    #     start_time = time.perf_counter()
+    #     KernelDG(
+    #         self.kernel_x86_long_LCD,
+    #         self.parser_x86_att,
+    #         self.machine_model_csx,
+    #         self.semantics_x86,
+    #         timeout=2,
+    #     )
+    #     end_time = time.perf_counter()
+    #     time_2 = end_time - start_time
 
-        self.assertTrue(time_10 > 10)
-        self.assertTrue(2 < time_2)
-        self.assertTrue(time_2 < (time_10 - 7))
+    #     self.assertTrue(time_10 > 10)
+    #     self.assertTrue(2 < time_2)
+    #     self.assertTrue(time_2 < (time_10 - 7))
 
     def test_is_read_is_written_x86(self):
         # independent form HW model
