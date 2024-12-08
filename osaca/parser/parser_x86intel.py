@@ -85,21 +85,21 @@ class ParserX86Intel(ParserX86):
 
             has_destination = False
             has_single_destination_at_end = False
-            for o in model["operands"]:
-                if o.get("source", False):
+            for o in model.operands:
+                if o.source:
                     if has_destination:
                         has_single_destination_at_end = False
-                if o.get("destination", False):
+                if o.destination:
                     if has_destination:
                         has_single_destination_at_end = False
                     else:
                         has_destination = True
                         has_single_destination_at_end = True
             if has_single_destination_at_end:
-                sources = instruction_form["operands"][:-1]
-                destination = instruction_form["operands"][-1]
+                sources = instruction_form.operands[:-1]
+                destination = instruction_form.operands[-1]
                 sources.insert(0, destination)
-                instruction_form["operands"] = sources
+                instruction_form.operands = sources
 
     def construct_parser(self):
         """Create parser for x86 Intel ISA."""

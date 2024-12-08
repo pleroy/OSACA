@@ -35,6 +35,10 @@ class ISASemantics(object):
     def parser(self):
         return self._parser
 
+    @property
+    def isa_model(self):
+        return self._isa_model
+
     def process(self, instruction_forms):
         """Process a list of instruction forms."""
         for i in instruction_forms:

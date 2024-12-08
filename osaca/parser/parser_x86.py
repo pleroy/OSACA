@@ -99,3 +99,9 @@ class ParserX86(BaseParser):
         elif self.is_vector_register(register):
             return register.name.rstrip(string.digits).lower()
         raise ValueError
+
+    def is_flag_dependend_of(self, flag_a, flag_b):
+        """Check if ``flag_a`` is dependent on ``flag_b``"""
+        # we assume flags are independent of each other, e.g., CF can be read while ZF gets written
+        # TODO validate this assumption
+        return flag_a.name == flag_b.name

@@ -23,7 +23,7 @@ class ArchSemantics(ISASemantics):
         """
         The kernel must be normalized before being passed to the other functions of this class.
         """
-        self.parser.normalize_instruction_forms(kernel, self._machine_model)
+        self.parser.normalize_instruction_forms(kernel, self.isa_model)
 
     # SUMMARY FUNCTION
     def add_semantics(self, kernel):

@@ -295,7 +295,7 @@ class MachineModel(object):
             # If `operands` is an integer, it represents the arity of the instruction.  This is
             # useful to reorder the operands in the Intel syntax because in their original order
             # they may not match the model.
-            if operands is int:
+            if isinstance(operands, int):
                 arity = operands
                 return next(
                     (
