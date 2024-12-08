@@ -46,6 +46,7 @@
     <Compile Include="osaca\parser\memory.py" />
     <Compile Include="osaca\parser\operand.py" />
     <Compile Include="osaca\parser\parser_AArch64.py" />
+    <Compile Include="osaca\parser\parser_x86.py" />
     <Compile Include="osaca\parser\parser_x86att.py" />
     <Compile Include="osaca\parser\parser_x86intel.py" />
     <Compile Include="osaca\parser\prefetch.py" />

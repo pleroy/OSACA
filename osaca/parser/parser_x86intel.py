@@ -4,7 +4,7 @@ import pyparsing as pp
 import re
 import string
 
-from osaca.parser import BaseParser
+from osaca.parser import ParserX86
 from osaca.parser.directive import DirectiveOperand
 from osaca.parser.identifier import IdentifierOperand
 from osaca.parser.immediate import ImmediateOperand
@@ -12,12 +12,13 @@ from osaca.parser.instruction_form import InstructionForm
 from osaca.parser.label import LabelOperand
 from osaca.parser.memory import MemoryOperand
 from osaca.parser.register import RegisterOperand
+from osaca.semantics.hw_model import MachineModel
 
 # References:
 #   ASM386 Assembly Language Reference, document number 469165-003, https://mirror.math.princeton.edu/pub/oldlinux/Linux.old/Ref-docs/asm-ref.pdf.
 #   Microsoft Macro Assembler BNF Grammar, https://learn.microsoft.com/en-us/cpp/assembler/masm/masm-bnf-grammar?view=msvc-170.
 #   Intel Architecture Code Analyzer User's Guide, https://www.intel.com/content/dam/develop/external/us/en/documents/intel-architecture-code-analyzer-3-0-users-guide-157552.pdf.
-class ParserX86Intel(BaseParser):
+class ParserX86Intel(ParserX86):
     _instance = None
 
     # Singleton pattern, as this is created very many times.
@@ -29,9 +30,6 @@ class ParserX86Intel(BaseParser):
     def __init__(self):
         super().__init__()
         self._equ = {}
-
-    def isa(self):
-        return "x86"
 
     # The IACA manual says: "For For Microsoft* Visual C++ compiler, 64-bit version, use
     # IACA_VC64_START and IACA_VC64_END, instead" (of IACA_START and IACA_END).
@@ -70,6 +68,38 @@ class ParserX86Intel(BaseParser):
                 ]
             ),
         ]
+
+    def normalize_instruction_forms(self, instruction_forms, machine_model: MachineModel):
+        """
+        If the model indicates that this instruction has a single destination that is the last
+        operand, move the first operand to the last position.  This effectively converts the Intel
+        syntax to the AT&T one.
+        """
+        for instruction_form in instruction_forms:
+            mnemonic = instruction_form.mnemonic
+            if not mnemonic:
+                continue
+            # We cannot pass the operands because they may not match before the reordering.  We just
+            # pass the arity instead.
+            model = machine_model.get_instruction(mnemonic, len(instruction_form.operands))
+
+            has_destination = False
+            has_single_destination_at_end = False
+            for o in model["operands"]:
+                if o.get("source", False):
+                    if has_destination:
+                        has_single_destination_at_end = False
+                if o.get("destination", False):
+                    if has_destination:
+                        has_single_destination_at_end = False
+                    else:
+                        has_destination = True
+                        has_single_destination_at_end = True
+            if has_single_destination_at_end:
+                sources = instruction_form["operands"][:-1]
+                destination = instruction_form["operands"][-1]
+                sources.insert(0, destination)
+                instruction_form["operands"] = sources
 
     def construct_parser(self):
         """Create parser for x86 Intel ISA."""
@@ -517,45 +547,6 @@ class ParserX86Intel(BaseParser):
         except pp.ParseException:
             return None
 
-    def is_basic_gpr(self, register):
-        """Check if register is a basic general purpose register (ebi, rax, ...)"""
-        if any(char.isdigit() for char in register.name) or any(
-            register.name.lower().startswith(x) for x in ["mm", "xmm", "ymm", "zmm"]
-        ):
-            return False
-        return True
-
-    def is_gpr(self, register):
-        """Check if register is a general purpose register"""
-        if register is None:
-            return False
-        if self.is_basic_gpr(register):
-            return True
-        return re.match(r"R([0-9]+)[DWB]?", register.name, re.IGNORECASE)
-
-    def is_vector_register(self, register):
-        """Check if register is a vector register"""
-        if register is None or register.name is None:
-            return False
-        if register.name.rstrip(string.digits).lower() in [
-            "mm",
-            "xmm",
-            "ymm",
-            "zmm",
-        ]:
-            return True
-        return False
-
-    def get_reg_type(self, register):
-        """Get register type"""
-        if register is None:
-            return False
-        if self.is_gpr(register):
-            return "gpr"
-        elif self.is_vector_register(register):
-            return register.name.rstrip(string.digits).lower()
-        raise ValueError
-
     def process_operand(self, operand):
         """Post-process operand"""
         if self.directive_id in operand:
@@ -706,6 +697,3 @@ class ParserX86Intel(BaseParser):
             return -value if negative else value
         else:
             return imd.value
-
-    def normalize_mnemonic(self, mnemonic):
-        return mnemonic

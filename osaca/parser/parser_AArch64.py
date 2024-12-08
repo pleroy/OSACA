@@ -13,6 +13,7 @@ from osaca.parser.identifier import IdentifierOperand
 from osaca.parser.immediate import ImmediateOperand
 from osaca.parser.condition import ConditionOperand
 from osaca.parser.prefetch import PrefetchOperand
+from osaca.semantics.hw_model import MachineModel
 
 
 class ParserAArch64(BaseParser):
@@ -51,6 +52,25 @@ class ParserAArch64(BaseParser):
                 directive_id=DirectiveOperand(name="byte", parameters=["213", "3", "32", "31"])
             )
         ]
+
+    def normalize_instruction_forms(self, instruction_forms, machine_model: MachineModel):
+        """
+        If the instruction doesn't exist in the machine model, normalize it by dropping the shape
+        suffix.
+        """
+        for instruction_form in instruction_forms:
+            mnemonic = instruction_form.mnemonic
+            if not mnemonic:
+                continue
+            model = machine_model.get_instruction(mnemonic, instruction_form.operands)
+            if not model:
+                if "." in mnemonic:
+                    # Check for instruction without shape/cc suffix.
+                    suffix_start = mnemonic.index(".")
+                    mnemonic = mnemonic[:suffix_start]
+                    model = machine_model.get_instruction(mnemonic, instruction_form.operands)
+                    if model:
+                        instruction_form.mnemonic = mnemonic
 
     def construct_parser(self):
         """Create parser for ARM AArch64 ISA."""
@@ -644,19 +664,6 @@ class ParserAArch64(BaseParser):
                 return imd.value
         # identifier
         return imd
-
-    def normalize_mnemonic(self, mnemonic):
-        """
-        Normalize a mnemonic by dropping the suffix.
-
-        :param str mnemonic
-        :return str
-        """
-        if "." in mnemonic:
-            # Check for instruction without shape/cc suffix.
-            suffix_start = mnemonic.index(".")
-            return mnemonic[:suffix_start]
-        return mnemonic
 
     def ieee_to_float(self, ieee_val):
         """Convert IEEE representation to python float"""

@@ -119,27 +119,35 @@ class TestSemanticTools(unittest.TestCase):
         )
         cls.machine_model_zen = MachineModel(arch="zen1")
 
+        cls.semantics_csx.normalize_kernel(cls.kernel_x86)
         for i in range(len(cls.kernel_x86)):
             cls.semantics_csx.assign_src_dst(cls.kernel_x86[i])
             cls.semantics_csx.assign_tp_lt(cls.kernel_x86[i])
+        cls.semantics_csx.normalize_kernel(cls.kernel_x86_memdep)
         for i in range(len(cls.kernel_x86_memdep)):
             cls.semantics_csx.assign_src_dst(cls.kernel_x86_memdep[i])
             cls.semantics_csx.assign_tp_lt(cls.kernel_x86_memdep[i])
+        cls.semantics_csx.normalize_kernel(cls.kernel_x86_long_LCD)
         for i in range(len(cls.kernel_x86_long_LCD)):
             cls.semantics_csx.assign_src_dst(cls.kernel_x86_long_LCD[i])
             cls.semantics_csx.assign_tp_lt(cls.kernel_x86_long_LCD[i])
+        cls.semantics_csx.normalize_kernel(cls.kernel_x86_intel)
         for i in range(len(cls.kernel_x86_intel)):
             cls.semantics_csx_intel.assign_src_dst(cls.kernel_x86_intel[i])
             cls.semantics_csx_intel.assign_tp_lt(cls.kernel_x86_intel[i])
+        cls.semantics_tx2.normalize_kernel(cls.kernel_AArch64)
         for i in range(len(cls.kernel_AArch64)):
             cls.semantics_tx2.assign_src_dst(cls.kernel_AArch64[i])
             cls.semantics_tx2.assign_tp_lt(cls.kernel_AArch64[i])
+        cls.semantics_tx2.normalize_kernel(cls.kernel_aarch64_memdep)
         for i in range(len(cls.kernel_aarch64_memdep)):
             cls.semantics_tx2.assign_src_dst(cls.kernel_aarch64_memdep[i])
             cls.semantics_tx2.assign_tp_lt(cls.kernel_aarch64_memdep[i])
+        cls.semantics_a64fx.normalize_kernel(cls.kernel_aarch64_SVE)
         for i in range(len(cls.kernel_aarch64_SVE)):
             cls.semantics_a64fx.assign_src_dst(cls.kernel_aarch64_SVE[i])
             cls.semantics_a64fx.assign_tp_lt(cls.kernel_aarch64_SVE[i])
+        cls.semantics_a64fx.normalize_kernel(cls.kernel_aarch64_deps)
         for i in range(len(cls.kernel_aarch64_deps)):
             cls.semantics_a64fx.assign_src_dst(cls.kernel_aarch64_deps[i])
             cls.semantics_a64fx.assign_tp_lt(cls.kernel_aarch64_deps[i])

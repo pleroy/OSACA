@@ -3,6 +3,8 @@
 import operator
 import re
 
+from osaca.semantics.hw_model import MachineModel
+
 
 class BaseParser(object):
     # Identifiers for operand types
@@ -37,12 +39,17 @@ class BaseParser(object):
     # operands in the parsed code, provided that the directives have the same name and the
     # parameters are in sequence with respect to the pattern.  This provides an easy way to describe
     # a sequence of bytes irrespective of the way it was grouped in the assemble source.
+    # Note that markers must be matched *before* normalization.
     def start_marker(self):
         # Done in derived classes
         raise NotImplementedError
 
     def end_marker(self):
         # Done in derived classes
+        raise NotImplementedError
+
+    # Performs all the normalization needed to match the instructions to the ISO/arch model.
+    def normalize_instruction_forms(self, instruction_forms, machine_model: MachineModel):
         raise NotImplementedError
 
     @staticmethod
@@ -132,9 +139,6 @@ class BaseParser(object):
         raise NotImplementedError
 
     def normalize_imd(self, imd):
-        raise NotImplementedError
-
-    def normalize_mnemonic(self, mnemonic):
         raise NotImplementedError
 
     def is_reg_dependend_of(self, reg_a, reg_b):

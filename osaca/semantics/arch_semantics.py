@@ -19,6 +19,12 @@ class ArchSemantics(ISASemantics):
         super().__init__(parser, path_to_yaml=path_to_yaml)
         self._machine_model = machine_model
 
+    def normalize_kernel(self, kernel):
+        """
+        The kernel must be normalized before being passed to the other functions of this class.
+        """
+        self.parser.normalize_instruction_forms(kernel, self._machine_model)
+
     # SUMMARY FUNCTION
     def add_semantics(self, kernel):
         """
@@ -187,11 +193,6 @@ class ArchSemantics(ISASemantics):
             instruction_data = self._machine_model.get_instruction(
                 instruction_form.mnemonic, instruction_form.operands
             )
-            if not instruction_data:
-                instruction_data = self._machine_model.get_instruction(
-                    self._parser.normalize_mnemonic(instruction_form.mnemonic),
-                    instruction_form.operands
-                )
             if instruction_data:
                 # instruction form in DB
                 (
@@ -215,11 +216,6 @@ class ArchSemantics(ISASemantics):
                     operands = self.substitute_mem_address(instruction_form.operands)
                     instruction_data_reg = self._machine_model.get_instruction(
                         instruction_form.mnemonic, operands
-                    )
-                    if not instruction_data_reg:
-                        instruction_data_reg = self._machine_model.get_instruction(
-                            self._parser.normalize_mnemonic(instruction_form.mnemonic),
-                            operands
                     )
                     if instruction_data_reg:
                         assign_unknown = False
