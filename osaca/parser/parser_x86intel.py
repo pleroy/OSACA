@@ -599,7 +599,7 @@ class ParserX86Intel(ParserX86):
         new_memory = MemoryOperand(offset=displacement_op, base=base_op, index=index_op, scale=scale)
         return new_memory
 
-    def process_address_expression(self, address_expression):
+    def process_address_expression(self, address_expression, data_type=None):
         # TODO: It seems that we could have a prefix immediate operand, a displacement in the
         # brackets, and an offset.  How all of this works together is somewhat mysterious.
         immediate_operand = (
@@ -617,11 +617,13 @@ class ParserX86Intel(ParserX86):
         if register_expression:
             if immediate_operand:
                 register_expression.offset = immediate_operand
+            if data_type:
+                register_expression.data_type = data_type
             return register_expression
         elif segment:
-            return MemoryOperand(base=segment, offset=immediate_operand)
+            return MemoryOperand(base=segment, offset=immediate_operand, data_type=data_type)
         else:
-            return MemoryOperand(base=immediate_operand)
+            return MemoryOperand(base=immediate_operand, data_type=data_type)
 
     def process_offset_expression(self, offset_expression):
         # TODO: Record that this is an offset expression.
@@ -629,7 +631,10 @@ class ParserX86Intel(ParserX86):
 
     def process_ptr_expression(self, ptr_expression):
         # TODO: Do something with the data_type.
-        return self.process_address_expression(ptr_expression.address_expression)
+        return self.process_address_expression(
+            ptr_expression.address_expression,
+            ptr_expression.data_type
+        )
 
     def process_short_expression(self, short_expression):
         # TODO: Do something with the fact that it is short.
