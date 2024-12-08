@@ -69,7 +69,12 @@ class ParserX86Intel(ParserX86):
             ),
         ]
 
-    def normalize_instruction_forms(self, instruction_forms, machine_model: MachineModel):
+    def normalize_instruction_forms(
+        self,
+        instruction_forms,
+        isa_model: MachineModel,
+        arch_model: MachineModel
+    ):
         """
         If the model indicates that this instruction has a single destination that is the last
         operand, move the first operand to the last position.  This effectively converts the Intel
@@ -80,8 +85,11 @@ class ParserX86Intel(ParserX86):
             if not mnemonic:
                 continue
             # We cannot pass the operands because they may not match before the reordering.  We just
-            # pass the arity instead.
-            model = machine_model.get_instruction(mnemonic, len(instruction_form.operands))
+            # pass the arity instead.  Also, this must use the ISA model, because that's where the
+            # source/destination information is found.
+            model = isa_model.get_instruction(mnemonic, len(instruction_form.operands))
+            if not model:
+                continue
 
             has_destination = False
             has_single_destination_at_end = False

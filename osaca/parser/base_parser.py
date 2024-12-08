@@ -49,7 +49,12 @@ class BaseParser(object):
         raise NotImplementedError
 
     # Performs all the normalization needed to match the instructions to the ISO/arch model.
-    def normalize_instruction_forms(self, instruction_forms, machine_model: MachineModel):
+    def normalize_instruction_forms(
+        self,
+        instruction_forms,
+        isa_model: MachineModel,
+        arch_model: MachineModel
+    ):
         raise NotImplementedError
 
     @staticmethod
