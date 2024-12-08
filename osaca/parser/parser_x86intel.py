@@ -84,30 +84,50 @@ class ParserX86Intel(ParserX86):
             mnemonic = instruction_form.mnemonic
             if not mnemonic:
                 continue
+
             # We cannot pass the operands because they may not match before the reordering.  We just
             # pass the arity instead.  Also, this must use the ISA model, because that's where the
             # source/destination information is found.
             model = isa_model.get_instruction(mnemonic, len(instruction_form.operands))
-            if not model:
-                continue
-
-            has_destination = False
             has_single_destination_at_end = False
-            for o in model.operands:
-                if o.source:
-                    if has_destination:
-                        has_single_destination_at_end = False
-                if o.destination:
-                    if has_destination:
-                        has_single_destination_at_end = False
-                    else:
-                        has_destination = True
-                        has_single_destination_at_end = True
+            if model:
+                has_destination = False
+                for o in model.operands:
+                    if o.source:
+                        if has_destination:
+                            has_single_destination_at_end = False
+                    if o.destination:
+                        if has_destination:
+                            has_single_destination_at_end = False
+                        else:
+                            has_destination = True
+                            has_single_destination_at_end = True
+            else:
+                # if there is only one operand, assume it is a source operand
+                has_single_destination_at_end = len(instruction_form.operands) > 1
             if has_single_destination_at_end:
                 sources = instruction_form.operands[:-1]
                 destination = instruction_form.operands[-1]
                 sources.insert(0, destination)
                 instruction_form.operands = sources
+
+            # If the instruction has a well-known data type, append a suffix.
+            data_type_to_suffix = {"DWORD": "d", "QWORD": "q"}
+            for o in instruction_form.operands:
+                if isinstance(o, MemoryOperand) and o.data_type:
+                    suffix = data_type_to_suffix.get(o.data_type, None)
+                    if suffix:
+                        suffixed_mnemonic = mnemonic + suffix
+                        if isa_model.get_instruction(
+                            suffixed_mnemonic,
+                            len(instruction_form.operands)
+                        ) or arch_model.get_instruction(
+                            suffixed_mnemonic,
+                            len(instruction_form.operands)
+                        ):
+                            instruction_form.mnemonic = suffixed_mnemonic
+                            break
+
 
     def construct_parser(self):
         """Create parser for x86 Intel ISA."""
@@ -678,21 +698,6 @@ class ParserX86Intel(ParserX86):
             new_immediate.value = self.normalize_imd(new_immediate)
             return new_immediate
         return IdentifierOperand(name=identifier.name)
-
-    def get_regular_source_operands(self, instruction_form):
-        """Get source operand of given instruction form assuming regular src/dst behavior."""
-        # if there is only one operand, assume it is a source operand
-        if len(instruction_form.operands) == 1:
-            return [instruction_form.operands[0]]
-        return [op for op in instruction_form.operands[1:]]
-
-    def get_regular_destination_operands(self, instruction_form):
-        """Get destination operand of given instruction form assuming regular src/dst behavior."""
-        # if there is only one operand, assume no destination
-        if len(instruction_form.operands) == 1:
-            return []
-        # return first operand
-        return instruction_form.operands[:1]
 
     def normalize_imd(self, imd):
         """Normalize immediate to decimal based representation"""

@@ -137,9 +137,11 @@ class BaseParser(object):
     def get_full_reg_name(self, register):
         raise NotImplementedError
 
+    # Must be called on a *normalized* instruction.
     def get_regular_source_operands(self, instruction_form):
         raise NotImplementedError
 
+    # Must be called on a *normalized* instruction.
     def get_regular_destination_operands(self, instruction_form):
         raise NotImplementedError
 
