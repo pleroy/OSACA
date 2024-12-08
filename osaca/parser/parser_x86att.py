@@ -17,6 +17,7 @@ from osaca.parser.immediate import ImmediateOperand
 
 class ParserX86ATT(BaseParser):
     _instance = None
+    GAS_SUFFIXES = "bswlqt"
 
     # Singelton pattern, as this is created very many times
     def __new__(cls):
@@ -417,6 +418,22 @@ class ParserX86ATT(BaseParser):
         # nothing to do
         return register.name
 
+    def get_regular_source_operands(self, instruction_form):
+        """Get source operand of given instruction form assuming regular src/dst behavior."""
+        # if there is only one operand, assume it is a source operand
+        if len(instruction_form.operands) == 1:
+            return [instruction_form.operands[0]]
+        # return all but last operand
+        return [op for op in instruction_form.operands[0:-1]]
+
+    def get_regular_destination_operands(self, instruction_form):
+        """Get destination operand of given instruction form assuming regular src/dst behavior."""
+        # if there is only one operand, assume no destination
+        if len(instruction_form.operands) == 1:
+            return []
+        # return last operand
+        return instruction_form.operands[-1:]
+
     def normalize_imd(self, imd):
         """Normalize immediate to decimal based representation"""
         if isinstance(imd, IdentifierOperand):
@@ -429,6 +446,18 @@ class ParserX86ATT(BaseParser):
                 return imd.value
         # identifier
         return imd
+
+    def normalize_mnemonic(self, mnemonic):
+        """
+        Normalize a mnemonic by dropping the suffix.
+
+        :param str mnemonic
+        :return str
+        """
+        # Check for instruction without GAS suffix.
+        if mnemonic[-1] in self.GAS_SUFFIXES:
+            return mnemonic[:-1]
+        return mnemonic
 
     def is_flag_dependend_of(self, flag_a, flag_b):
         """Check if ``flag_a`` is dependent on ``flag_b``"""

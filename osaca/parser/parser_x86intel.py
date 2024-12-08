@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
 import pyparsing as pp
+import re
+import string
 
 from osaca.parser import BaseParser
 from osaca.parser.directive import DirectiveOperand
@@ -515,6 +517,45 @@ class ParserX86Intel(BaseParser):
         except pp.ParseException:
             return None
 
+    def is_basic_gpr(self, register):
+        """Check if register is a basic general purpose register (ebi, rax, ...)"""
+        if any(char.isdigit() for char in register.name) or any(
+            register.name.lower().startswith(x) for x in ["mm", "xmm", "ymm", "zmm"]
+        ):
+            return False
+        return True
+
+    def is_gpr(self, register):
+        """Check if register is a general purpose register"""
+        if register is None:
+            return False
+        if self.is_basic_gpr(register):
+            return True
+        return re.match(r"R([0-9]+)[DWB]?", register.name, re.IGNORECASE)
+
+    def is_vector_register(self, register):
+        """Check if register is a vector register"""
+        if register is None or register.name is None:
+            return False
+        if register.name.rstrip(string.digits).lower() in [
+            "mm",
+            "xmm",
+            "ymm",
+            "zmm",
+        ]:
+            return True
+        return False
+
+    def get_reg_type(self, register):
+        """Get register type"""
+        if register is None:
+            return False
+        if self.is_gpr(register):
+            return "gpr"
+        elif self.is_vector_register(register):
+            return register.name.rstrip(string.digits).lower()
+        raise ValueError
+
     def process_operand(self, operand):
         """Post-process operand"""
         if self.directive_id in operand:
@@ -634,6 +675,21 @@ class ParserX86Intel(BaseParser):
             return new_immediate
         return IdentifierOperand(name=identifier.name)
 
+    def get_regular_source_operands(self, instruction_form):
+        """Get source operand of given instruction form assuming regular src/dst behavior."""
+        # if there is only one operand, assume it is a source operand
+        if len(instruction_form.operands) == 1:
+            return [instruction_form.operands[0]]
+        return [op for op in instruction_form.operands[1:]]
+
+    def get_regular_destination_operands(self, instruction_form):
+        """Get destination operand of given instruction form assuming regular src/dst behavior."""
+        # if there is only one operand, assume no destination
+        if len(instruction_form.operands) == 1:
+            return []
+        # return first operand
+        return instruction_form.operands[:1]
+
     def normalize_imd(self, imd):
         """Normalize immediate to decimal based representation"""
         if isinstance(imd.value, str):
@@ -650,3 +706,6 @@ class ParserX86Intel(BaseParser):
             return -value if negative else value
         else:
             return imd.value
+
+    def normalize_mnemonic(self, mnemonic):
+        return mnemonic

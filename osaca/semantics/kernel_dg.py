@@ -38,7 +38,8 @@ class KernelDG(nx.DiGraph):
             self.kernel, timeout, flag_dependencies
         )
 
-    def _extend_path(self, dst_list, kernel, dg, offset):
+    @classmethod
+    def _extend_path(cls, dst_list, kernel, dg, offset):
         for instr in kernel:
             generator_path = nx.algorithms.simple_paths.all_simple_paths(
                 dg, instr.line_number, instr.line_number + offset
@@ -138,7 +139,7 @@ class KernelDG(nx.DiGraph):
                 all_paths = manager.list()
                 processes = [
                     Process(
-                        target=self._extend_path,
+                        target=KernelDG._extend_path,
                         args=(all_paths, instr_section, dg, offset),
                     )
                     for instr_section in instrs
@@ -164,9 +165,7 @@ class KernelDG(nx.DiGraph):
                         # terminate running processes
                         for p in processes:
                             if p.is_alive():
-                                # Python 3.6 does not support Process.kill().
-                                # Can be changed to `p.kill()` after EoL (01/22) of Py3.6
-                                os.kill(p.pid, signal.SIGKILL)
+                                p.kill()
                             p.join()
                 all_paths = list(all_paths)
         else:

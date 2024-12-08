@@ -79,7 +79,7 @@ class MachineModel(object):
             else:
                 yaml = self._create_yaml_object()
                 # otherwise load
-                with open(self._path, "r") as f:
+                with open(self._path, "r", encoding="utf8") as f:
                     if not lazy:
                         self._data = yaml.load(f)
                     else:

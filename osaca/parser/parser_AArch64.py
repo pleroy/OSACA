@@ -613,6 +613,21 @@ class ParserAArch64(BaseParser):
             name += "[" + str(register.index) + "]"
         return name
 
+    def get_regular_source_operands(self, instruction_form):
+        """Get source operand of given instruction form assuming regular src/dst behavior."""
+        # if there is only one operand, assume it is a source operand
+        if len(instruction_form.operands) == 1:
+            return [instruction_form.operands[0]]
+        return [op for op in instruction_form.operands[1:]]
+
+    def get_regular_destination_operands(self, instruction_form):
+        """Get destination operand of given instruction form assuming regular src/dst behavior."""
+        # if there is only one operand, assume no destination
+        if len(instruction_form.operands) == 1:
+            return []
+        # return first operand
+        return instruction_form.operands[:1]
+
     def normalize_imd(self, imd):
         """Normalize immediate to decimal based representation"""
         if isinstance(imd, IdentifierOperand):
@@ -629,6 +644,19 @@ class ParserAArch64(BaseParser):
                 return imd.value
         # identifier
         return imd
+
+    def normalize_mnemonic(self, mnemonic):
+        """
+        Normalize a mnemonic by dropping the suffix.
+
+        :param str mnemonic
+        :return str
+        """
+        if "." in mnemonic:
+            # Check for instruction without shape/cc suffix.
+            suffix_start = mnemonic.index(".")
+            return mnemonic[:suffix_start]
+        return mnemonic
 
     def ieee_to_float(self, ieee_val):
         """Convert IEEE representation to python float"""
