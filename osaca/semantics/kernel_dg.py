@@ -38,8 +38,8 @@ class KernelDG(nx.DiGraph):
             self.kernel, timeout, flag_dependencies
         )
 
-    @staticmethod
-    def _extend_path(dst_list, kernel, dg, offset):
+    @classmethod
+    def _extend_path(cls, dst_list, kernel, dg, offset):
         for instr in kernel:
             generator_path = nx.algorithms.simple_paths.all_simple_paths(
                 dg, instr.line_number, instr.line_number + offset
