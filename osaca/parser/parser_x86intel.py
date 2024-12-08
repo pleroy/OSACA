@@ -69,33 +69,38 @@ class ParserX86Intel(ParserX86):
             ),
         ]
 
-    def normalize_instruction_form(self, instruction_form, machine_model: MachineModel):
+    def normalize_instruction_forms(self, instruction_forms, machine_model: MachineModel):
         """
         If the model indicates that this instruction has a single destination that is the last
         operand, move the first operand to the last position.  This effectively converts the Intel
         syntax to the AT&T one.
         """
-        model = machine_model.get_instruction(instruction_form.mnemonic,
-                                              len(instruction_form.operands))
+        normalized = []
+        for instruction_form in instruction_forms:
+            # We cannot pass the operands because they may not match before the reordering.  We just
+            # pass the arity instead.
+            model = machine_model.get_instruction(instruction_form.mnemonic,
+                                                  len(instruction_form.operands))
 
-        has_destination = False
-        has_single_destination_at_end = False
-        for o in model["operands"]:
-            if o.get("source", False):
-                if has_destination:
-                    has_single_destination_at_end = False
-            if o.get("destination", False):
-                if has_destination:
-                    has_single_destination_at_end = False
-                else:
-                    has_destination = True
-                    has_single_destination_at_end = True
-        if has_single_destination_at_end:
-            sources = instruction_form["operands"][:-1]
-            destination = instruction_form["operands"][-1]
-            sources.insert(0, destination)
-            instruction_form["operands"] = sources
-        return instruction_form
+            has_destination = False
+            has_single_destination_at_end = False
+            for o in model["operands"]:
+                if o.get("source", False):
+                    if has_destination:
+                        has_single_destination_at_end = False
+                if o.get("destination", False):
+                    if has_destination:
+                        has_single_destination_at_end = False
+                    else:
+                        has_destination = True
+                        has_single_destination_at_end = True
+            if has_single_destination_at_end:
+                sources = instruction_form["operands"][:-1]
+                destination = instruction_form["operands"][-1]
+                sources.insert(0, destination)
+                instruction_form["operands"] = sources
+            normalized.append(instruction_form)
+        return normalized
 
     def construct_parser(self):
         """Create parser for x86 Intel ISA."""

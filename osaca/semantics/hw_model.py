@@ -285,46 +285,40 @@ class MachineModel(object):
     ######################################################
 
     def get_instruction(self, name, operands):
-        """Find and return instruction data from name and operands."""
+        """Find and return instruction data from name and operands/arity."""
         # For use with dict instead of list as DB
         if name is None:
             return None
         name_matched_iforms = self._data["instruction_forms_dict"].get(name.upper(), [])
 
         try:
-            return next(
-                (
-                    instruction_form
-                    for instruction_form in name_matched_iforms
-                    if self._match_operands(
-                        instruction_form.operands,
-                        operands
-                    )
-                ),
-                None
-            )
+            # If `operands` is an integer, it represents the arity of the instruction.  This is
+            # useful to reorder the operands in the Intel syntax because in their original order
+            # they may not match the model.
+            if operands is int:
+                arity = operands
+                return next(
+                    (
+                        instruction_form
+                        for instruction_form in name_matched_iforms
+                        if len(instruction_form.operands) == arity
+                    ),
+                    None
+                )
+            else:
+                return next(
+                    (
+                        instruction_form
+                        for instruction_form in name_matched_iforms
+                        if self._match_operands(
+                            instruction_form.operands,
+                            operands
+                        )
+                    ),
+                    None
+                )
         except TypeError as e:
             print("\nname: {}\noperands: {}".format(name, operands))
-            raise TypeError from e
-
-    def get_instruction(self, name, arity):
-        """Find and return instruction data from name and arity."""
-        # For use with dict instead of list as DB
-        if name is None:
-            return None
-        name_matched_iforms = self._data["instruction_forms_dict"].get(name.upper(), [])
-
-        try:
-            return next(
-                (
-                    instruction_form
-                    for instruction_form in name_matched_iforms
-                    if len(instruction_form.operands) == arity
-                ),
-                None
-            )
-        except TypeError as e:
-            print("\nname: {}\narity: {}".format(name, arity))
             raise TypeError from e
 
     def average_port_pressure(self, port_pressure, option=0):
