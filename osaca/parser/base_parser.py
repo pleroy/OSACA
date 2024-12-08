@@ -39,6 +39,7 @@ class BaseParser(object):
     # operands in the parsed code, provided that the directives have the same name and the
     # parameters are in sequence with respect to the pattern.  This provides an easy way to describe
     # a sequence of bytes irrespective of the way it was grouped in the assemble source.
+    # Note that markers must be matched *before* normalization.
     def start_marker(self):
         # Done in derived classes
         raise NotImplementedError

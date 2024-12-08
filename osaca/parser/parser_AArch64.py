@@ -58,22 +58,19 @@ class ParserAArch64(BaseParser):
         If the instruction doesn't exist in the machine model, normalize it by dropping the shape
         suffix.
         """
-        normalized = []
         for instruction_form in instruction_forms:
             mnemonic = instruction_form.mnemonic
-            model = machine_model.get_instruction(mnemonic, len(instruction_form.operands))
+            if not mnemonic:
+                continue
+            model = machine_model.get_instruction(mnemonic, instruction_form.operands)
             if not model:
                 if "." in mnemonic:
                     # Check for instruction without shape/cc suffix.
                     suffix_start = mnemonic.index(".")
                     mnemonic = mnemonic[:suffix_start]
-                    model = machine_model.get_instruction(mnemonic, len(instruction_form.operands))
+                    model = machine_model.get_instruction(mnemonic, instruction_form.operands)
                     if model:
                         instruction_form.mnemonic = mnemonic
-                    else:
-                        raise KeyError("Not found " + instruction_form.mnemonic)
-            normalized.append(instruction_form)
-        return normalized
 
     def construct_parser(self):
         """Create parser for ARM AArch64 ISA."""

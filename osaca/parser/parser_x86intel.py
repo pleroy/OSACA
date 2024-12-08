@@ -75,12 +75,13 @@ class ParserX86Intel(ParserX86):
         operand, move the first operand to the last position.  This effectively converts the Intel
         syntax to the AT&T one.
         """
-        normalized = []
         for instruction_form in instruction_forms:
             # We cannot pass the operands because they may not match before the reordering.  We just
             # pass the arity instead.
-            model = machine_model.get_instruction(instruction_form.mnemonic,
-                                                  len(instruction_form.operands))
+            mnemonic = instruction_form.mnemonic
+            if not mnemonic:
+                continue
+            model = machine_model.get_instruction(mnemonic, len(instruction_form.operands))
 
             has_destination = False
             has_single_destination_at_end = False
@@ -99,8 +100,6 @@ class ParserX86Intel(ParserX86):
                 destination = instruction_form["operands"][-1]
                 sources.insert(0, destination)
                 instruction_form["operands"] = sources
-            normalized.append(instruction_form)
-        return normalized
 
     def construct_parser(self):
         """Create parser for x86 Intel ISA."""

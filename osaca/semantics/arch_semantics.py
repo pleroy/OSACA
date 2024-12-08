@@ -19,6 +19,12 @@ class ArchSemantics(ISASemantics):
         super().__init__(parser, path_to_yaml=path_to_yaml)
         self._machine_model = machine_model
 
+    def normalize_kernel(self, kernel):
+        """
+        The kernel must be normalized before being passed to the other functions of this class.
+        """
+        self.parser.normalize_instruction_forms(kernel, self._machine_model)
+
     # SUMMARY FUNCTION
     def add_semantics(self, kernel):
         """
