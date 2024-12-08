@@ -76,11 +76,11 @@ class ParserX86Intel(ParserX86):
         syntax to the AT&T one.
         """
         for instruction_form in instruction_forms:
-            # We cannot pass the operands because they may not match before the reordering.  We just
-            # pass the arity instead.
             mnemonic = instruction_form.mnemonic
             if not mnemonic:
                 continue
+            # We cannot pass the operands because they may not match before the reordering.  We just
+            # pass the arity instead.
             model = machine_model.get_instruction(mnemonic, len(instruction_form.operands))
 
             has_destination = False

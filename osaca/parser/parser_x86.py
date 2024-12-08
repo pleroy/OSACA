@@ -99,6 +99,3 @@ class ParserX86(BaseParser):
         elif self.is_vector_register(register):
             return register.name.rstrip(string.digits).lower()
         raise ValueError
-
-
-
