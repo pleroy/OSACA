@@ -898,6 +898,7 @@ class MachineModel(object):
         return True
 
     def _is_x86_reg_type(self, i_reg, reg, consider_masking=False):
+        from osaca.parser import ParserX86
         """Check if register type match."""
         if reg is None:
             if i_reg is None:

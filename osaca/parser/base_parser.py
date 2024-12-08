@@ -131,6 +131,12 @@ class BaseParser(object):
     def get_full_reg_name(self, register):
         raise NotImplementedError
 
+    def get_regular_source_operands(self, instruction_form):
+        raise NotImplementedError
+
+    def get_regular_destination_operands(self, instruction_form):
+        raise NotImplementedError
+
     def normalize_imd(self, imd):
         raise NotImplementedError
 
