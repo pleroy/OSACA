@@ -41,8 +41,10 @@ class TestSemanticTools(unittest.TestCase):
             cls.code_x86_memdep = f.read()
         with open(cls._find_file("kernel_x86_long_LCD.s")) as f:
             cls.code_x86_long_LCD = f.read()
-        with open(cls._find_file("kernel_x86_intel.asm")) as f:
-            cls.code_x86_intel = f.read()
+        with open(cls._find_file("kernel_x86_intel_O1.asm")) as f:
+            cls.code_x86_intel_O1 = f.read()
+        with open(cls._find_file("kernel_x86_intel_Od.asm")) as f:
+            cls.code_x86_intel_Od = f.read()
         with open(cls._find_file("kernel_aarch64_memdep.s")) as f:
             cls.code_aarch64_memdep = f.read()
         with open(cls._find_file("kernel_aarch64.s")) as f:
@@ -63,8 +65,12 @@ class TestSemanticTools(unittest.TestCase):
             cls.parser_x86_att.parse_file(cls.code_x86_long_LCD),
             cls.parser_x86_att
         )
-        cls.kernel_x86_intel = reduce_to_section(
-            cls.parser_x86_intel.parse_file(cls.code_x86_intel),
+        cls.kernel_x86_intel_O1 = reduce_to_section(
+            cls.parser_x86_intel.parse_file(cls.code_x86_intel_O1),
+            cls.parser_x86_intel
+        )
+        cls.kernel_x86_intel_Od = reduce_to_section(
+            cls.parser_x86_intel.parse_file(cls.code_x86_intel_Od),
             cls.parser_x86_intel
         )
         cls.kernel_AArch64 = reduce_to_section(
@@ -131,10 +137,14 @@ class TestSemanticTools(unittest.TestCase):
         for i in range(len(cls.kernel_x86_long_LCD)):
             cls.semantics_csx.assign_src_dst(cls.kernel_x86_long_LCD[i])
             cls.semantics_csx.assign_tp_lt(cls.kernel_x86_long_LCD[i])
-        cls.semantics_csx_intel.normalize_kernel(cls.kernel_x86_intel)
-        for i in range(len(cls.kernel_x86_intel)):
-            cls.semantics_csx_intel.assign_src_dst(cls.kernel_x86_intel[i])
-            cls.semantics_csx_intel.assign_tp_lt(cls.kernel_x86_intel[i])
+        cls.semantics_csx_intel.normalize_kernel(cls.kernel_x86_intel_O1)
+        for i in range(len(cls.kernel_x86_intel_O1)):
+            cls.semantics_csx_intel.assign_src_dst(cls.kernel_x86_intel_O1[i])
+            cls.semantics_csx_intel.assign_tp_lt(cls.kernel_x86_intel_O1[i])
+        cls.semantics_csx_intel.normalize_kernel(cls.kernel_x86_intel_Od)
+        for i in range(len(cls.kernel_x86_intel_Od)):
+            cls.semantics_csx_intel.assign_src_dst(cls.kernel_x86_intel_Od[i])
+            cls.semantics_csx_intel.assign_tp_lt(cls.kernel_x86_intel_Od[i])
         cls.semantics_tx2.normalize_kernel(cls.kernel_AArch64)
         for i in range(len(cls.kernel_AArch64)):
             cls.semantics_tx2.assign_src_dst(cls.kernel_AArch64[i])
@@ -303,7 +313,7 @@ class TestSemanticTools(unittest.TestCase):
                     self.assertTrue("src_dst" in instruction_form.semantic_operands)
 
     def test_src_dst_assignment_x86_intel(self):
-        for instruction_form in self.kernel_x86_intel:
+        for instruction_form in self.kernel_x86_intel_O1:
              with self.subTest(instruction_form=instruction_form):
                  if instruction_form.semantic_operands is not None:
                      self.assertTrue("source" in instruction_form.semantic_operands)
@@ -328,10 +338,10 @@ class TestSemanticTools(unittest.TestCase):
                 self.assertIsInstance(instruction_form.port_pressure, list)
                 self.assertEqual(len(instruction_form.port_pressure), port_num)
 
-    def test_tp_lt_assignment_x86_intel(self):
+    def test_tp_lt_assignment_x86_intel_O1(self):
         self.assertTrue("ports" in self.machine_model_csx)
         port_num = len(self.machine_model_csx["ports"])
-        for instruction_form in self.kernel_x86_intel:
+        for instruction_form in self.kernel_x86_intel_O1:
             with self.subTest(instruction_form=instruction_form):
                 self.assertTrue(instruction_form.throughput is not None)
                 self.assertTrue(instruction_form.latency is not None)
@@ -421,7 +431,7 @@ class TestSemanticTools(unittest.TestCase):
         # test dot creation
         dg.export_graph(filepath=os.devnull)
 
-    def test_kernelDG_x86_intel(self):
+    def test_kernelDG_x86_intel_O1(self):
         #
         #  4
         #   \___>6__>7
@@ -430,7 +440,7 @@ class TestSemanticTools(unittest.TestCase):
         #     5_______>9
         #
         dg = KernelDG(
-            self.kernel_x86_intel,
+            self.kernel_x86_intel_O1,
             self.parser_x86_intel,
             self.machine_model_csx,
             self.semantics_csx_intel
