@@ -106,9 +106,9 @@ class ParserX86Intel(ParserX86):
                 # if there is only one operand, assume it is a source operand
                 has_single_destination_at_end = len(instruction_form.operands) > 1
             if has_single_destination_at_end:
-                sources = instruction_form.operands[:-1]
-                destination = instruction_form.operands[-1]
-                sources.insert(0, destination)
+                sources = instruction_form.operands[1:]
+                destination = instruction_form.operands[0]
+                sources.append(destination)
                 instruction_form.operands = sources
 
             # If the instruction has a well-known data type, append a suffix.

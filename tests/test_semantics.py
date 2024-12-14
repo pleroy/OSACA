@@ -433,11 +433,12 @@ class TestSemanticTools(unittest.TestCase):
 
     def test_kernelDG_x86_intel_O1(self):
         #
-        #  4
-        #   \___>6__>7
-        #   /
         #  3
-        #     5_______>9
+        #   \___>5__>6
+        #   /  /
+        #  4  /
+        #    /
+        #  5.1
         #
         dg = KernelDG(
             self.kernel_x86_intel_O1,
@@ -445,16 +446,16 @@ class TestSemanticTools(unittest.TestCase):
             self.machine_model_csx,
             self.semantics_csx_intel
         )
-        print(dg.dg.adj)
         self.assertTrue(nx.algorithms.dag.is_directed_acyclic_graph(dg.dg))
         self.assertEqual(len(list(dg.get_dependent_instruction_forms(line_number=3))), 1)
-        self.assertEqual(next(dg.get_dependent_instruction_forms(line_number=3)), 6)
+        self.assertEqual(next(dg.get_dependent_instruction_forms(line_number=3)), 5)
         self.assertEqual(len(list(dg.get_dependent_instruction_forms(line_number=4))), 1)
-        self.assertEqual(next(dg.get_dependent_instruction_forms(line_number=4)), 6)
+        self.assertEqual(next(dg.get_dependent_instruction_forms(line_number=4)), 5)
         self.assertEqual(len(list(dg.get_dependent_instruction_forms(line_number=5))), 1)
-        self.assertEqual(next(dg.get_dependent_instruction_forms(line_number=5)), 9)
-        self.assertEqual(len(list(dg.get_dependent_instruction_forms(line_number=6))), 1)
-        self.assertEqual(next(dg.get_dependent_instruction_forms(line_number=6)), 7)
+        self.assertEqual(next(dg.get_dependent_instruction_forms(line_number=5)), 6)
+        self.assertEqual(len(list(dg.get_dependent_instruction_forms(line_number=5.1))), 1)
+        self.assertEqual(next(dg.get_dependent_instruction_forms(line_number=5.1)), 5)
+        self.assertEqual(list(dg.get_dependent_instruction_forms(line_number=6)), [])
         self.assertEqual(list(dg.get_dependent_instruction_forms(line_number=7)), [])
         self.assertEqual(list(dg.get_dependent_instruction_forms(line_number=8)), [])
         with self.assertRaises(ValueError):
