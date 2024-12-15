@@ -656,31 +656,31 @@ class TestSemanticTools(unittest.TestCase):
             dg.dg.nodes(data=True)[int(lcd_id2)]["instruction_form"],
         )
 
-    # def test_timeout_during_loop_carried_dependency(self):
-    #     start_time = time.perf_counter()
-    #     KernelDG(
-    #         self.kernel_x86_long_LCD,
-    #         self.parser_x86_att,
-    #         self.machine_model_csx,
-    #         self.semantics_x86,
-    #         timeout=10,
-    #     )
-    #     end_time = time.perf_counter()
-    #     time_10 = end_time - start_time
-    #     start_time = time.perf_counter()
-    #     KernelDG(
-    #         self.kernel_x86_long_LCD,
-    #         self.parser_x86_att,
-    #         self.machine_model_csx,
-    #         self.semantics_x86,
-    #         timeout=2,
-    #     )
-    #     end_time = time.perf_counter()
-    #     time_2 = end_time - start_time
+    def test_timeout_during_loop_carried_dependency(self):
+        start_time = time.perf_counter()
+        KernelDG(
+            self.kernel_x86_long_LCD,
+            self.parser_x86_att,
+            self.machine_model_csx,
+            self.semantics_x86,
+            timeout=10,
+        )
+        end_time = time.perf_counter()
+        time_10 = end_time - start_time
+        start_time = time.perf_counter()
+        KernelDG(
+            self.kernel_x86_long_LCD,
+            self.parser_x86_att,
+            self.machine_model_csx,
+            self.semantics_x86,
+            timeout=2,
+        )
+        end_time = time.perf_counter()
+        time_2 = end_time - start_time
 
-    #     self.assertTrue(time_10 > 10)
-    #     self.assertTrue(2 < time_2)
-    #     self.assertTrue(time_2 < (time_10 - 7))
+        self.assertTrue(time_10 > 10)
+        self.assertTrue(2 < time_2)
+        self.assertTrue(time_2 < (time_10 - 7))
 
     def test_is_read_is_written_x86(self):
         # independent form HW model
