@@ -2,7 +2,6 @@
 from itertools import chain
 
 from osaca import utils
-from osaca.parser import ParserAArch64, ParserX86ATT
 from osaca.parser.memory import MemoryOperand
 from osaca.parser.operand import Operand
 from osaca.parser.register import RegisterOperand
