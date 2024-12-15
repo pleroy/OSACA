@@ -300,7 +300,10 @@ class ParserX86Intel(ParserX86):
         base_register = self.register
         index_register = self.register
         scale = pp.Word("1248", exact=1)
-        displacement = pp.Group(integer_number | identifier).setResultsName(self.immediate_id)
+        displacement = pp.Group(
+            (pp.Literal("+") ^ pp.Literal("-")).setResultsName("sign")
+            + integer_number | identifier
+        ).setResultsName(self.immediate_id)
         register_expression = pp.Group(
             pp.Literal("[")
             + pp.Optional(base_register.setResultsName("base"))
@@ -309,10 +312,7 @@ class ParserX86Intel(ParserX86):
                 + index_register.setResultsName("index")
                 + pp.Optional(pp.Literal("*") + scale.setResultsName("scale"))
             )
-            + pp.Optional(
-                pp.Literal("+")
-                + pp.Group(displacement).setResultsName("displacement")
-            )
+            + pp.Optional(pp.Group(displacement).setResultsName("displacement"))
             + pp.Literal("]")
         ).setResultsName("register_expression")
 
@@ -684,7 +684,7 @@ class ParserX86Intel(ParserX86):
         if "identifier" in immediate:
             # Actually an identifier, change declaration.
             return self.process_identifier(immediate.identifier)
-        new_immediate = ImmediateOperand(value=immediate.value)
+        new_immediate = ImmediateOperand(value=immediate.get("sign", "") + immediate.value)
         new_immediate.value = self.normalize_imd(new_immediate)
         return new_immediate
 
@@ -708,7 +708,8 @@ class ParserX86Intel(ParserX86):
             base = {'B': 2, 'O': 8, 'H': 16}.get(imd.value[-1], 10)
             value = 0
             negative = imd.value[0] == '-'
-            start = +negative
+            positive = imd.value[0] == '+'
+            start = +(negative or positive)
             stop = len(imd.value) if base == 10 else -1
             for c in imd.value[start:stop]:
                 value = value * base + int(c, base)

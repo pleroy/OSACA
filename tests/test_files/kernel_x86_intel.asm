@@ -1,4 +1,4 @@
-; /std:c++latest /O1 /fp:contract /arch:AVX2
+; https://godbolt.org/z/o49jjojnx /std:c++latest /O1 /fp:contract /arch:AVX2
 $LL13@foo:
 	vmovsd  xmm1, QWORD PTR [rax]
 	vmovsd  xmm0, QWORD PTR [rcx+rax]
