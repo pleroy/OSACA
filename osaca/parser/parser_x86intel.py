@@ -108,8 +108,7 @@ class ParserX86Intel(ParserX86):
             if has_single_destination_at_end:
                 sources = instruction_form.operands[1:]
                 destination = instruction_form.operands[0]
-                sources.append(destination)
-                instruction_form.operands = sources
+                instruction_form.operands = sources + [destination]
 
             # If the instruction has a well-known data type, append a suffix.
             data_type_to_suffix = {"DWORD": "d", "QWORD": "q"}
