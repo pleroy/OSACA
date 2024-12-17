@@ -2,7 +2,6 @@
 from itertools import chain
 
 from osaca import utils
-from osaca.parser import ParserAArch64, ParserX86ATT
 from osaca.parser.memory import MemoryOperand
 from osaca.parser.operand import Operand
 from osaca.parser.register import RegisterOperand
@@ -34,6 +33,10 @@ class ISASemantics(object):
     @property
     def parser(self):
         return self._parser
+
+    @property
+    def isa_model(self):
+        return self._isa_model
 
     def process(self, instruction_forms):
         """Process a list of instruction forms."""

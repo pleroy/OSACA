@@ -63,7 +63,12 @@ class ParserX86ATT(ParserX86):
             )
         ]
 
-    def normalize_instruction_forms(self, instruction_forms, machine_model: MachineModel):
+    def normalize_instruction_forms(
+        self,
+        instruction_forms,
+        isa_model: MachineModel,
+        arch_model: MachineModel
+    ):
         """
         If the instruction doesn't exist in the machine model, normalize it by dropping the GAS
         suffix.
@@ -72,12 +77,12 @@ class ParserX86ATT(ParserX86):
             mnemonic = instruction_form.mnemonic
             if not mnemonic:
                 continue
-            model = machine_model.get_instruction(mnemonic, instruction_form.operands)
+            model = arch_model.get_instruction(mnemonic, instruction_form.operands)
             if not model:
                 # Check for instruction without GAS suffix.
                 if mnemonic[-1] in self.GAS_SUFFIXES:
                     mnemonic = mnemonic[:-1]
-                    model = machine_model.get_instruction(mnemonic, instruction_form.operands)
+                    model = arch_model.get_instruction(mnemonic, instruction_form.operands)
                     if model:
                         instruction_form.mnemonic = mnemonic
 
@@ -434,22 +439,6 @@ class ParserX86ATT(ParserX86):
         # nothing to do
         return register.name
 
-    def get_regular_source_operands(self, instruction_form):
-        """Get source operand of given instruction form assuming regular src/dst behavior."""
-        # if there is only one operand, assume it is a source operand
-        if len(instruction_form.operands) == 1:
-            return [instruction_form.operands[0]]
-        # return all but last operand
-        return [op for op in instruction_form.operands[0:-1]]
-
-    def get_regular_destination_operands(self, instruction_form):
-        """Get destination operand of given instruction form assuming regular src/dst behavior."""
-        # if there is only one operand, assume no destination
-        if len(instruction_form.operands) == 1:
-            return []
-        # return last operand
-        return instruction_form.operands[-1:]
-
     def normalize_imd(self, imd):
         """Normalize immediate to decimal based representation"""
         if isinstance(imd, IdentifierOperand):
@@ -462,9 +451,3 @@ class ParserX86ATT(ParserX86):
                 return imd.value
         # identifier
         return imd
-
-    def is_flag_dependend_of(self, flag_a, flag_b):
-        """Check if ``flag_a`` is dependent on ``flag_b``"""
-        # we assume flags are independent of each other, e.g., CF can be read while ZF gets written
-        # TODO validate this assumption
-        return flag_a.name == flag_b.name

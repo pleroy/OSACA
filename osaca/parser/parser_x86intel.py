@@ -69,7 +69,12 @@ class ParserX86Intel(ParserX86):
             ),
         ]
 
-    def normalize_instruction_forms(self, instruction_forms, machine_model: MachineModel):
+    def normalize_instruction_forms(
+        self,
+        instruction_forms,
+        isa_model: MachineModel,
+        arch_model: MachineModel
+    ):
         """
         If the model indicates that this instruction has a single destination that is the last
         operand, move the first operand to the last position.  This effectively converts the Intel
@@ -79,27 +84,49 @@ class ParserX86Intel(ParserX86):
             mnemonic = instruction_form.mnemonic
             if not mnemonic:
                 continue
-            # We cannot pass the operands because they may not match before the reordering.  We just
-            # pass the arity instead.
-            model = machine_model.get_instruction(mnemonic, len(instruction_form.operands))
 
-            has_destination = False
+            # We cannot pass the operands because they may not match before the reordering.  We just
+            # pass the arity instead.  Also, this must use the ISA model, because that's where the
+            # source/destination information is found.
+            model = isa_model.get_instruction(mnemonic, len(instruction_form.operands))
             has_single_destination_at_end = False
-            for o in model["operands"]:
-                if o.get("source", False):
-                    if has_destination:
-                        has_single_destination_at_end = False
-                if o.get("destination", False):
-                    if has_destination:
-                        has_single_destination_at_end = False
-                    else:
-                        has_destination = True
-                        has_single_destination_at_end = True
+            if model:
+                has_destination = False
+                for o in model.operands:
+                    if o.source:
+                        if has_destination:
+                            has_single_destination_at_end = False
+                    if o.destination:
+                        if has_destination:
+                            has_single_destination_at_end = False
+                        else:
+                            has_destination = True
+                            has_single_destination_at_end = True
+            else:
+                # if there is only one operand, assume it is a source operand
+                has_single_destination_at_end = len(instruction_form.operands) > 1
             if has_single_destination_at_end:
-                sources = instruction_form["operands"][:-1]
-                destination = instruction_form["operands"][-1]
-                sources.insert(0, destination)
-                instruction_form["operands"] = sources
+                sources = instruction_form.operands[1:]
+                destination = instruction_form.operands[0]
+                instruction_form.operands = sources + [destination]
+
+            # If the instruction has a well-known data type, append a suffix.
+            data_type_to_suffix = {"DWORD": "d", "QWORD": "q"}
+            for o in instruction_form.operands:
+                if isinstance(o, MemoryOperand) and o.data_type:
+                    suffix = data_type_to_suffix.get(o.data_type, None)
+                    if suffix:
+                        suffixed_mnemonic = mnemonic + suffix
+                        if isa_model.get_instruction(
+                            suffixed_mnemonic,
+                            len(instruction_form.operands)
+                        ) or arch_model.get_instruction(
+                            suffixed_mnemonic,
+                            len(instruction_form.operands)
+                        ):
+                            instruction_form.mnemonic = suffixed_mnemonic
+                            break
+
 
     def construct_parser(self):
         """Create parser for x86 Intel ISA."""
@@ -272,7 +299,10 @@ class ParserX86Intel(ParserX86):
         base_register = self.register
         index_register = self.register
         scale = pp.Word("1248", exact=1)
-        displacement = pp.Group(integer_number | identifier).setResultsName(self.immediate_id)
+        displacement = pp.Group(
+            (pp.Literal("+") ^ pp.Literal("-")).setResultsName("sign")
+            + integer_number | identifier
+        ).setResultsName(self.immediate_id)
         register_expression = pp.Group(
             pp.Literal("[")
             + pp.Optional(base_register.setResultsName("base"))
@@ -281,10 +311,7 @@ class ParserX86Intel(ParserX86):
                 + index_register.setResultsName("index")
                 + pp.Optional(pp.Literal("*") + scale.setResultsName("scale"))
             )
-            + pp.Optional(
-                pp.Literal("+")
-                + pp.Group(displacement).setResultsName("displacement")
-            )
+            + pp.Optional(pp.Group(displacement).setResultsName("displacement"))
             + pp.Literal("]")
         ).setResultsName("register_expression")
 
@@ -591,7 +618,7 @@ class ParserX86Intel(ParserX86):
         new_memory = MemoryOperand(offset=displacement_op, base=base_op, index=index_op, scale=scale)
         return new_memory
 
-    def process_address_expression(self, address_expression):
+    def process_address_expression(self, address_expression, data_type=None):
         # TODO: It seems that we could have a prefix immediate operand, a displacement in the
         # brackets, and an offset.  How all of this works together is somewhat mysterious.
         immediate_operand = (
@@ -609,11 +636,13 @@ class ParserX86Intel(ParserX86):
         if register_expression:
             if immediate_operand:
                 register_expression.offset = immediate_operand
+            if data_type:
+                register_expression.data_type = data_type
             return register_expression
         elif segment:
-            return MemoryOperand(base=segment, offset=immediate_operand)
+            return MemoryOperand(base=segment, offset=immediate_operand, data_type=data_type)
         else:
-            return MemoryOperand(base=immediate_operand)
+            return MemoryOperand(base=immediate_operand, data_type=data_type)
 
     def process_offset_expression(self, offset_expression):
         # TODO: Record that this is an offset expression.
@@ -621,7 +650,10 @@ class ParserX86Intel(ParserX86):
 
     def process_ptr_expression(self, ptr_expression):
         # TODO: Do something with the data_type.
-        return self.process_address_expression(ptr_expression.address_expression)
+        return self.process_address_expression(
+            ptr_expression.address_expression,
+            ptr_expression.data_type
+        )
 
     def process_short_expression(self, short_expression):
         # TODO: Do something with the fact that it is short.
@@ -651,7 +683,7 @@ class ParserX86Intel(ParserX86):
         if "identifier" in immediate:
             # Actually an identifier, change declaration.
             return self.process_identifier(immediate.identifier)
-        new_immediate = ImmediateOperand(value=immediate.value)
+        new_immediate = ImmediateOperand(value=immediate.get("sign", "") + immediate.value)
         new_immediate.value = self.normalize_imd(new_immediate)
         return new_immediate
 
@@ -666,21 +698,6 @@ class ParserX86Intel(ParserX86):
             return new_immediate
         return IdentifierOperand(name=identifier.name)
 
-    def get_regular_source_operands(self, instruction_form):
-        """Get source operand of given instruction form assuming regular src/dst behavior."""
-        # if there is only one operand, assume it is a source operand
-        if len(instruction_form.operands) == 1:
-            return [instruction_form.operands[0]]
-        return [op for op in instruction_form.operands[1:]]
-
-    def get_regular_destination_operands(self, instruction_form):
-        """Get destination operand of given instruction form assuming regular src/dst behavior."""
-        # if there is only one operand, assume no destination
-        if len(instruction_form.operands) == 1:
-            return []
-        # return first operand
-        return instruction_form.operands[:1]
-
     def normalize_imd(self, imd):
         """Normalize immediate to decimal based representation"""
         if isinstance(imd.value, str):
@@ -690,7 +707,8 @@ class ParserX86Intel(ParserX86):
             base = {'B': 2, 'O': 8, 'H': 16}.get(imd.value[-1], 10)
             value = 0
             negative = imd.value[0] == '-'
-            start = +negative
+            positive = imd.value[0] == '+'
+            start = +(negative or positive)
             stop = len(imd.value) if base == 10 else -1
             for c in imd.value[start:stop]:
                 value = value * base + int(c, base)

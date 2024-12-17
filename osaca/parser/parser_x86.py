@@ -99,3 +99,25 @@ class ParserX86(BaseParser):
         elif self.is_vector_register(register):
             return register.name.rstrip(string.digits).lower()
         raise ValueError
+
+    def is_flag_dependend_of(self, flag_a, flag_b):
+        """Check if ``flag_a`` is dependent on ``flag_b``"""
+        # we assume flags are independent of each other, e.g., CF can be read while ZF gets written
+        # TODO validate this assumption
+        return flag_a.name == flag_b.name
+
+    def get_regular_source_operands(self, instruction_form):
+        """Get source operand of given instruction form assuming regular src/dst behavior."""
+        # if there is only one operand, assume it is a source operand
+        if len(instruction_form.operands) == 1:
+            return [instruction_form.operands[0]]
+        # return all but last operand
+        return [op for op in instruction_form.operands[0:-1]]
+
+    def get_regular_destination_operands(self, instruction_form):
+        """Get destination operand of given instruction form assuming regular src/dst behavior."""
+        # if there is only one operand, assume no destination
+        if len(instruction_form.operands) == 1:
+            return []
+        # return last operand
+        return instruction_form.operands[-1:]
