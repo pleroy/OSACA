@@ -105,6 +105,8 @@ class ParserX86Intel(ParserX86):
             else:
                 # if there is only one operand, assume it is a source operand
                 has_single_destination_at_end = len(instruction_form.operands) > 1
+            # TODO: This doesn't do the right thing for vinsertf128, the immediate operand is first
+            # in the AT&T syntax and last in the Intel syntax.
             if has_single_destination_at_end:
                 sources = instruction_form.operands[1:]
                 destination = instruction_form.operands[0]

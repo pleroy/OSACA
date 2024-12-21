@@ -358,8 +358,7 @@ class TestSemanticTools(unittest.TestCase):
                 self.assertIsInstance(instruction_form.port_pressure, list)
                 self.assertEqual(len(instruction_form.port_pressure), port_num)
 
-    def test_optimal_throughput_assignment(self):
-        # x86
+    def test_optimal_throughput_assignment_x86(self):
         kernel_fixed = deepcopy(self.kernel_x86)
         self.semantics_csx.add_semantics(kernel_fixed)
         self.assertEqual(get_unmatched_instruction_ratio(kernel_fixed), 0)
@@ -386,9 +385,34 @@ class TestSemanticTools(unittest.TestCase):
         self.assertEqual(k1i1_pp, [0.33, 0.0, 0.33, 0.0, 0.0, 0.0, 0.0, 0.0, 0.33, 0.0, 0.0])
         self.assertEqual(k2i1_pp, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0])
 
-        # TODO x86 Intel
+    def test_optimal_throughput_assignment_x86_intel(self):
+        kernel_fixed = deepcopy(self.kernel_x86_intel)
+        self.semantics_csx_intel.add_semantics(kernel_fixed)
+        self.assertEqual(get_unmatched_instruction_ratio(kernel_fixed), 0)
 
-        # arm
+        kernel_optimal = deepcopy(kernel_fixed)
+        self.semantics_csx_intel.assign_optimal_throughput(kernel_optimal)
+        tp_fixed = self.semantics_csx_intel.get_throughput_sum(kernel_fixed)
+        tp_optimal = self.semantics_csx_intel.get_throughput_sum(kernel_optimal)
+        self.assertNotEqual(tp_fixed, tp_optimal)
+        self.assertTrue(max(tp_optimal) <= max(tp_fixed))
+        # test multiple port assignment options
+        test_mm_x86 = MachineModel(path_to_yaml=self._find_file("test_db_x86.yml"))
+        tmp_semantics = ArchSemantics(self.parser_x86_intel, test_mm_x86)
+        tmp_code_1 = "fantasyinstr1 rax, rax\n"
+        tmp_code_2 = "fantasyinstr1 rax, rax\nfantasyinstr2 rbx, rbx\n"
+        tmp_kernel_1 = self.parser_x86_intel.parse_file(tmp_code_1)
+        tmp_kernel_2 = self.parser_x86_intel.parse_file(tmp_code_2)
+        tmp_semantics.add_semantics(tmp_kernel_1)
+        tmp_semantics.add_semantics(tmp_kernel_2)
+        tmp_semantics.assign_optimal_throughput(tmp_kernel_1)
+        tmp_semantics.assign_optimal_throughput(tmp_kernel_2)
+        k1i1_pp = [round(x, 2) for x in tmp_kernel_1[0].port_pressure]
+        k2i1_pp = [round(x, 2) for x in tmp_kernel_2[0].port_pressure]
+        self.assertEqual(k1i1_pp, [0.33, 0.0, 0.33, 0.0, 0.0, 0.0, 0.0, 0.0, 0.33, 0.0, 0.0])
+        self.assertEqual(k2i1_pp, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0])
+
+    def test_optimal_throughput_assignment_AArch64(self):
         kernel_fixed = deepcopy(self.kernel_AArch64)
         self.semantics_tx2.add_semantics(kernel_fixed)
 
@@ -656,6 +680,39 @@ class TestSemanticTools(unittest.TestCase):
             dg.dg.nodes(data=True)[int(lcd_id2)]["instruction_form"],
         )
 
+    def test_loop_carried_dependency_x86_intel(self):
+        lcd_id = "8"
+        lcd_id2 = "7"
+        dg = KernelDG(
+            self.kernel_x86_intel,
+            self.parser_x86_intel,
+            self.machine_model_csx,
+            self.semantics_csx_intel
+        )
+        lc_deps = dg.get_loopcarried_dependencies()
+        # self.assertEqual(len(lc_deps), 2)
+        # ID 8
+        self.assertEqual(
+            lc_deps[lcd_id]["root"], dg.dg.nodes(data=True)[int(lcd_id)]["instruction_form"]
+        )
+        self.assertEqual(len(lc_deps[lcd_id]["dependencies"]), 1)
+        self.assertEqual(
+            lc_deps[lcd_id]["dependencies"][0][0],
+            dg.dg.nodes(data=True)[int(lcd_id)]["instruction_form"],
+        )
+        # w/  flag dependencies: ID 9 w/ len=2
+        # w/o flag dependencies: ID 5 w/ len=1
+        # TODO discuss
+        self.assertEqual(
+            lc_deps[lcd_id2]["root"],
+            dg.dg.nodes(data=True)[int(lcd_id2)]["instruction_form"],
+        )
+        self.assertEqual(len(lc_deps[lcd_id2]["dependencies"]), 1)
+        self.assertEqual(
+            lc_deps[lcd_id2]["dependencies"][0][0],
+            dg.dg.nodes(data=True)[int(lcd_id2)]["instruction_form"],
+        )
+
     def test_timeout_during_loop_carried_dependency(self):
         start_time = time.perf_counter()
         KernelDG(
@@ -705,6 +762,47 @@ class TestSemanticTools(unittest.TestCase):
         self.semantics_csx.assign_src_dst(instr_form_rw_ymm_2)
         instr_form_r_ymm = self.parser_x86_att.parse_line("vmovapd %ymm1, %ymm0")
         self.semantics_csx.assign_src_dst(instr_form_r_ymm)
+        self.assertTrue(dag.is_read(reg_rcx, instr_form_r_c))
+        self.assertFalse(dag.is_read(reg_rcx, instr_form_non_r_c))
+        self.assertFalse(dag.is_read(reg_rcx, instr_form_w_c))
+        self.assertTrue(dag.is_written(reg_rcx, instr_form_w_c))
+        self.assertFalse(dag.is_written(reg_rcx, instr_form_r_c))
+        self.assertTrue(dag.is_read(reg_ymm1, instr_form_rw_ymm_1))
+        self.assertTrue(dag.is_read(reg_ymm1, instr_form_rw_ymm_2))
+        self.assertTrue(dag.is_read(reg_ymm1, instr_form_r_ymm))
+        self.assertTrue(dag.is_written(reg_ymm1, instr_form_rw_ymm_1))
+        self.assertTrue(dag.is_written(reg_ymm1, instr_form_rw_ymm_2))
+        self.assertFalse(dag.is_written(reg_ymm1, instr_form_r_ymm))
+
+    def test_is_read_is_written_x86_intel(self):
+        # independent form HW model
+        dag = KernelDG(self.kernel_x86_intel, self.parser_x86_intel, None, None)
+        reg_rcx = RegisterOperand(name="rcx")
+        reg_ymm1 = RegisterOperand(name="ymm1")
+
+        instr_form_r_c = self.parser_x86_intel.parse_line("vmovsd  QWORD PTR [r15+rcx*8], xmm0")
+        self.semantics_csx_intel.normalize_kernel([instr_form_r_c])
+        self.semantics_csx_intel.assign_src_dst(instr_form_r_c)
+        instr_form_non_r_c = self.parser_x86_intel.parse_line("mov  QWORD PTR [r15+rax*8], xmm0")
+        self.semantics_csx_intel.normalize_kernel([instr_form_non_r_c])
+        self.semantics_csx_intel.assign_src_dst(instr_form_non_r_c)
+        instr_form_w_c = self.parser_x86_intel.parse_line("mov rcx, H05ACA")
+        self.semantics_csx_intel.normalize_kernel([instr_form_w_c])
+        self.semantics_csx_intel.assign_src_dst(instr_form_w_c)
+
+        instr_form_rw_ymm_1 = self.parser_x86_intel.parse_line(
+            "vinsertf128 ymm1, ymm0, xmm1, 1"
+        )
+        self.semantics_csx_intel.normalize_kernel([instr_form_rw_ymm_1])
+        self.semantics_csx_intel.assign_src_dst(instr_form_rw_ymm_1)
+        instr_form_rw_ymm_2 = self.parser_x86_intel.parse_line(
+            "vinsertf128 ymm1, ymm1, xmm0, 1"
+        )
+        self.semantics_csx_intel.normalize_kernel([instr_form_rw_ymm_2])
+        self.semantics_csx_intel.assign_src_dst(instr_form_rw_ymm_2)
+        instr_form_r_ymm = self.parser_x86_intel.parse_line("vmovapd ymm0, ymm1")
+        self.semantics_csx_intel.normalize_kernel([instr_form_r_ymm])
+        self.semantics_csx_intel.assign_src_dst(instr_form_r_ymm)
         self.assertTrue(dag.is_read(reg_rcx, instr_form_r_c))
         self.assertFalse(dag.is_read(reg_rcx, instr_form_non_r_c))
         self.assertFalse(dag.is_read(reg_rcx, instr_form_w_c))
