@@ -63,9 +63,9 @@ class ParserX86ATT(ParserX86):
             )
         ]
 
-    def normalize_instruction_forms(
+    def normalize_instruction_form(
         self,
-        instruction_forms,
+        instruction_form,
         isa_model: MachineModel,
         arch_model: MachineModel
     ):
@@ -73,18 +73,21 @@ class ParserX86ATT(ParserX86):
         If the instruction doesn't exist in the machine model, normalize it by dropping the GAS
         suffix.
         """
-        for instruction_form in instruction_forms:
-            mnemonic = instruction_form.mnemonic
-            if not mnemonic:
-                continue
-            model = arch_model.get_instruction(mnemonic, instruction_form.operands)
-            if not model:
-                # Check for instruction without GAS suffix.
-                if mnemonic[-1] in self.GAS_SUFFIXES:
-                    mnemonic = mnemonic[:-1]
-                    model = arch_model.get_instruction(mnemonic, instruction_form.operands)
-                    if model:
-                        instruction_form.mnemonic = mnemonic
+        if instruction_form.normalized:
+            return
+        instruction_form.normalized = True
+
+        mnemonic = instruction_form.mnemonic
+        if not mnemonic:
+            return
+        model = arch_model.get_instruction(mnemonic, instruction_form.operands)
+        if not model:
+            # Check for instruction without GAS suffix.
+            if mnemonic[-1] in self.GAS_SUFFIXES:
+                mnemonic = mnemonic[:-1]
+                model = arch_model.get_instruction(mnemonic, instruction_form.operands)
+                if model:
+                    instruction_form.mnemonic = mnemonic
 
     def construct_parser(self):
         """Create parser for x86 AT&T ISA."""
