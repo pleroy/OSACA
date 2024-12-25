@@ -125,39 +125,39 @@ class TestSemanticTools(unittest.TestCase):
         )
         cls.machine_model_zen = MachineModel(arch="zen1")
 
-        cls.semantics_csx.normalize_kernel(cls.kernel_x86)
+        cls.semantics_csx.normalize_instruction_forms(cls.kernel_x86)
         for i in range(len(cls.kernel_x86)):
             cls.semantics_csx.assign_src_dst(cls.kernel_x86[i])
             cls.semantics_csx.assign_tp_lt(cls.kernel_x86[i])
-        cls.semantics_csx.normalize_kernel(cls.kernel_x86_memdep)
+        cls.semantics_csx.normalize_instruction_forms(cls.kernel_x86_memdep)
         for i in range(len(cls.kernel_x86_memdep)):
             cls.semantics_csx.assign_src_dst(cls.kernel_x86_memdep[i])
             cls.semantics_csx.assign_tp_lt(cls.kernel_x86_memdep[i])
-        cls.semantics_csx.normalize_kernel(cls.kernel_x86_long_LCD)
+        cls.semantics_csx.normalize_instruction_forms(cls.kernel_x86_long_LCD)
         for i in range(len(cls.kernel_x86_long_LCD)):
             cls.semantics_csx.assign_src_dst(cls.kernel_x86_long_LCD[i])
             cls.semantics_csx.assign_tp_lt(cls.kernel_x86_long_LCD[i])
-        cls.semantics_csx_intel.normalize_kernel(cls.kernel_x86_intel)
+        cls.semantics_csx_intel.normalize_instruction_forms(cls.kernel_x86_intel)
         for i in range(len(cls.kernel_x86_intel)):
             cls.semantics_csx_intel.assign_src_dst(cls.kernel_x86_intel[i])
             cls.semantics_csx_intel.assign_tp_lt(cls.kernel_x86_intel[i])
-        cls.semantics_csx_intel.normalize_kernel(cls.kernel_x86_intel_memdep)
+        cls.semantics_csx_intel.normalize_instruction_forms(cls.kernel_x86_intel_memdep)
         for i in range(len(cls.kernel_x86_intel_memdep)):
             cls.semantics_csx_intel.assign_src_dst(cls.kernel_x86_intel_memdep[i])
             cls.semantics_csx_intel.assign_tp_lt(cls.kernel_x86_intel_memdep[i])
-        cls.semantics_tx2.normalize_kernel(cls.kernel_AArch64)
+        cls.semantics_tx2.normalize_instruction_forms(cls.kernel_AArch64)
         for i in range(len(cls.kernel_AArch64)):
             cls.semantics_tx2.assign_src_dst(cls.kernel_AArch64[i])
             cls.semantics_tx2.assign_tp_lt(cls.kernel_AArch64[i])
-        cls.semantics_tx2.normalize_kernel(cls.kernel_aarch64_memdep)
+        cls.semantics_tx2.normalize_instruction_forms(cls.kernel_aarch64_memdep)
         for i in range(len(cls.kernel_aarch64_memdep)):
             cls.semantics_tx2.assign_src_dst(cls.kernel_aarch64_memdep[i])
             cls.semantics_tx2.assign_tp_lt(cls.kernel_aarch64_memdep[i])
-        cls.semantics_a64fx.normalize_kernel(cls.kernel_aarch64_SVE)
+        cls.semantics_a64fx.normalize_instruction_forms(cls.kernel_aarch64_SVE)
         for i in range(len(cls.kernel_aarch64_SVE)):
             cls.semantics_a64fx.assign_src_dst(cls.kernel_aarch64_SVE[i])
             cls.semantics_a64fx.assign_tp_lt(cls.kernel_aarch64_SVE[i])
-        cls.semantics_a64fx.normalize_kernel(cls.kernel_aarch64_deps)
+        cls.semantics_a64fx.normalize_instruction_forms(cls.kernel_aarch64_deps)
         for i in range(len(cls.kernel_aarch64_deps)):
             cls.semantics_a64fx.assign_src_dst(cls.kernel_aarch64_deps[i])
             cls.semantics_a64fx.assign_tp_lt(cls.kernel_aarch64_deps[i])
@@ -376,6 +376,8 @@ class TestSemanticTools(unittest.TestCase):
         tmp_code_2 = "fantasyinstr1 %rax, %rax\nfantasyinstr2 %rbx, %rbx\n"
         tmp_kernel_1 = self.parser_x86_att.parse_file(tmp_code_1)
         tmp_kernel_2 = self.parser_x86_att.parse_file(tmp_code_2)
+        tmp_semantics.normalize_instruction_forms(tmp_kernel_1)
+        tmp_semantics.normalize_instruction_forms(tmp_kernel_2)
         tmp_semantics.add_semantics(tmp_kernel_1)
         tmp_semantics.add_semantics(tmp_kernel_2)
         tmp_semantics.assign_optimal_throughput(tmp_kernel_1)
@@ -403,6 +405,8 @@ class TestSemanticTools(unittest.TestCase):
         tmp_code_2 = "fantasyinstr1 rax, rax\nfantasyinstr2 rbx, rbx\n"
         tmp_kernel_1 = self.parser_x86_intel.parse_file(tmp_code_1)
         tmp_kernel_2 = self.parser_x86_intel.parse_file(tmp_code_2)
+        tmp_semantics.normalize_instruction_forms(tmp_kernel_1)
+        tmp_semantics.normalize_instruction_forms(tmp_kernel_2)
         tmp_semantics.add_semantics(tmp_kernel_1)
         tmp_semantics.add_semantics(tmp_kernel_2)
         tmp_semantics.assign_optimal_throughput(tmp_kernel_1)
@@ -567,6 +571,10 @@ class TestSemanticTools(unittest.TestCase):
         kernel_hld_2 = self.parser_x86_att.parse_file(self.code_x86)
         kernel_hld_2 = self.parser_x86_att.parse_file(self.code_x86)[-3:]
         kernel_hld_3 = self.parser_x86_att.parse_file(self.code_x86)[5:8]
+
+        semantics_hld.normalize_instruction_forms(kernel_hld)
+        semantics_hld.normalize_instruction_forms(kernel_hld_2)
+        semantics_hld.normalize_instruction_forms(kernel_hld_3)
 
         semantics_hld.add_semantics(kernel_hld)
         semantics_hld.add_semantics(kernel_hld_2)
@@ -746,21 +754,27 @@ class TestSemanticTools(unittest.TestCase):
         reg_ymm1 = RegisterOperand(name="ymm1")
 
         instr_form_r_c = self.parser_x86_att.parse_line("vmovsd  %xmm0, (%r15,%rcx,8)")
+        self.semantics_csx.normalize_instruction_form(instr_form_r_c)
         self.semantics_csx.assign_src_dst(instr_form_r_c)
         instr_form_non_r_c = self.parser_x86_att.parse_line("movl  %xmm0, (%r15,%rax,8)")
+        self.semantics_csx.normalize_instruction_form(instr_form_non_r_c)
         self.semantics_csx.assign_src_dst(instr_form_non_r_c)
         instr_form_w_c = self.parser_x86_att.parse_line("movi $0x05ACA, %rcx")
+        self.semantics_csx.normalize_instruction_form(instr_form_w_c)
         self.semantics_csx.assign_src_dst(instr_form_w_c)
 
         instr_form_rw_ymm_1 = self.parser_x86_att.parse_line(
             "vinsertf128 $0x1, %xmm1, %ymm0, %ymm1"
         )
+        self.semantics_csx.normalize_instruction_form(instr_form_rw_ymm_1)
         self.semantics_csx.assign_src_dst(instr_form_rw_ymm_1)
         instr_form_rw_ymm_2 = self.parser_x86_att.parse_line(
             "vinsertf128 $0x1, %xmm0, %ymm1, %ymm1"
         )
+        self.semantics_csx.normalize_instruction_form(instr_form_rw_ymm_2)
         self.semantics_csx.assign_src_dst(instr_form_rw_ymm_2)
         instr_form_r_ymm = self.parser_x86_att.parse_line("vmovapd %ymm1, %ymm0")
+        self.semantics_csx.normalize_instruction_form(instr_form_r_ymm)
         self.semantics_csx.assign_src_dst(instr_form_r_ymm)
         self.assertTrue(dag.is_read(reg_rcx, instr_form_r_c))
         self.assertFalse(dag.is_read(reg_rcx, instr_form_non_r_c))
@@ -781,27 +795,27 @@ class TestSemanticTools(unittest.TestCase):
         reg_ymm1 = RegisterOperand(name="ymm1")
 
         instr_form_r_c = self.parser_x86_intel.parse_line("vmovsd  QWORD PTR [r15+rcx*8], xmm0")
-        self.semantics_csx_intel.normalize_kernel([instr_form_r_c])
+        self.semantics_csx_intel.normalize_instruction_form(instr_form_r_c)
         self.semantics_csx_intel.assign_src_dst(instr_form_r_c)
         instr_form_non_r_c = self.parser_x86_intel.parse_line("mov  QWORD PTR [r15+rax*8], xmm0")
-        self.semantics_csx_intel.normalize_kernel([instr_form_non_r_c])
+        self.semantics_csx_intel.normalize_instruction_form(instr_form_non_r_c)
         self.semantics_csx_intel.assign_src_dst(instr_form_non_r_c)
         instr_form_w_c = self.parser_x86_intel.parse_line("mov rcx, H05ACA")
-        self.semantics_csx_intel.normalize_kernel([instr_form_w_c])
+        self.semantics_csx_intel.normalize_instruction_form(instr_form_w_c)
         self.semantics_csx_intel.assign_src_dst(instr_form_w_c)
 
         instr_form_rw_ymm_1 = self.parser_x86_intel.parse_line(
             "vinsertf128 ymm1, ymm0, xmm1, 1"
         )
-        self.semantics_csx_intel.normalize_kernel([instr_form_rw_ymm_1])
+        self.semantics_csx_intel.normalize_instruction_form(instr_form_rw_ymm_1)
         self.semantics_csx_intel.assign_src_dst(instr_form_rw_ymm_1)
         instr_form_rw_ymm_2 = self.parser_x86_intel.parse_line(
             "vinsertf128 ymm1, ymm1, xmm0, 1"
         )
-        self.semantics_csx_intel.normalize_kernel([instr_form_rw_ymm_2])
+        self.semantics_csx_intel.normalize_instruction_form(instr_form_rw_ymm_2)
         self.semantics_csx_intel.assign_src_dst(instr_form_rw_ymm_2)
         instr_form_r_ymm = self.parser_x86_intel.parse_line("vmovapd ymm0, ymm1")
-        self.semantics_csx_intel.normalize_kernel([instr_form_r_ymm])
+        self.semantics_csx_intel.normalize_instruction_form(instr_form_r_ymm)
         self.semantics_csx_intel.assign_src_dst(instr_form_r_ymm)
         self.assertTrue(dag.is_read(reg_rcx, instr_form_r_c))
         self.assertFalse(dag.is_read(reg_rcx, instr_form_non_r_c))
@@ -827,20 +841,28 @@ class TestSemanticTools(unittest.TestCase):
         regs_gp = [reg_w1, reg_x1]
 
         instr_form_r_1 = self.parser_AArch64.parse_line("stp q1, q3, [x12, #192]")
+        self.semantics_tx2.normalize_instruction_form(instr_form_r_1)
         self.semantics_tx2.assign_src_dst(instr_form_r_1)
         instr_form_r_2 = self.parser_AArch64.parse_line("fadd v2.2d, v1.2d, v0.2d")
+        self.semantics_tx2.normalize_instruction_form(instr_form_r_2)
         self.semantics_tx2.assign_src_dst(instr_form_r_2)
         instr_form_w_1 = self.parser_AArch64.parse_line("ldr d1, [x1, #:got_lo12:q2c]")
+        self.semantics_tx2.normalize_instruction_form(instr_form_w_1)
         self.semantics_tx2.assign_src_dst(instr_form_w_1)
         instr_form_non_w_1 = self.parser_AArch64.parse_line("ldr x1, [x1, #:got_lo12:q2c]")
+        self.semantics_tx2.normalize_instruction_form(instr_form_non_w_1)
         self.semantics_tx2.assign_src_dst(instr_form_non_w_1)
         instr_form_rw_1 = self.parser_AArch64.parse_line("fmul v1.2d, v1.2d, v0.2d")
+        self.semantics_tx2.normalize_instruction_form(instr_form_rw_1)
         self.semantics_tx2.assign_src_dst(instr_form_rw_1)
         instr_form_rw_2 = self.parser_AArch64.parse_line("ldp q2, q4, [x1, #64]!")
+        self.semantics_tx2.normalize_instruction_form(instr_form_rw_2)
         self.semantics_tx2.assign_src_dst(instr_form_rw_2)
         instr_form_rw_3 = self.parser_AArch64.parse_line("str x4, [x1], #64")
+        self.semantics_tx2.normalize_instruction_form(instr_form_rw_3)
         self.semantics_tx2.assign_src_dst(instr_form_rw_3)
         instr_form_non_rw_1 = self.parser_AArch64.parse_line("adds x1, x11")
+        self.semantics_tx2.normalize_instruction_form(instr_form_non_rw_1)
         self.semantics_tx2.assign_src_dst(instr_form_non_rw_1)
 
         for reg in regs:

@@ -41,6 +41,7 @@ class ISASemantics(object):
     def process(self, instruction_forms):
         """Process a list of instruction forms."""
         for i in instruction_forms:
+            i.check_normalized()
             self.assign_src_dst(i)
 
     # get ;parser result and assign operands to
@@ -49,6 +50,7 @@ class ISASemantics(object):
     # - source/destination
     def assign_src_dst(self, instruction_form):
         """Update instruction form dictionary with source, destination and flag information."""
+        instruction_form.check_normalized()
         # if the instruction form doesn't have operands or is None, there's nothing to do
         if instruction_form.operands is None or instruction_form.mnemonic is None:
             instruction_form.semantic_operands = {"source": [], "destination": [], "src_dst": []}
@@ -128,6 +130,7 @@ class ISASemantics(object):
         Empty dict if no changes of registers occured. None for registers with unknown changes.
         If only_postindexed is True, only considers changes due to post_indexed memory references.
         """
+        instruction_form.check_normalized()
         if instruction_form.mnemonic is None:
             return {}
         dest_reg_names = [
@@ -253,6 +256,7 @@ class ISASemantics(object):
 
     def _has_load(self, instruction_form):
         """Check if instruction form performs a LOAD"""
+        instruction_form.check_normalized()
         for operand in chain(
             instruction_form.semantic_operands["source"],
             instruction_form.semantic_operands["src_dst"],
@@ -263,6 +267,7 @@ class ISASemantics(object):
 
     def _has_store(self, instruction_form):
         """Check if instruction form perfroms a STORE"""
+        instruction_form.check_normalized()
         for operand in chain(
             instruction_form.semantic_operands["destination"],
             instruction_form.semantic_operands["src_dst"],

@@ -44,6 +44,10 @@ class InstructionForm:
         self._port_uops = []
         self._flags = []
 
+    def check_normalized(self):
+        if not self._normalized:
+            raise AssertionError("Unnormalized instruction")
+
     @property
     def semantic_operands(self):
         return self._semantic_operands
