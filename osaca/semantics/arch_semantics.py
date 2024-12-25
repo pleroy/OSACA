@@ -19,11 +19,20 @@ class ArchSemantics(ISASemantics):
         super().__init__(parser, path_to_yaml=path_to_yaml)
         self._machine_model = machine_model
 
-    def normalize_kernel(self, kernel):
-        """
-        The kernel must be normalized before being passed to the other functions of this class.
-        """
-        self.parser.normalize_instruction_forms(kernel, self.isa_model, self._machine_model)
+    def normalize_instruction_form(self, instruction_form):
+        self.parser.normalize_instruction_form(
+            instruction_form,
+            self.isa_model,
+            self._machine_model
+        )
+
+    def normalize_instruction_forms(self, instruction_forms):
+        for instruction_form in instruction_forms:
+            self.normalize_instruction_form(instruction_form)
+
+    def _check_normalized(self, instruction_forms):
+        for instruction_form in instruction_forms:
+            instruction_form.check_normalized()
 
     # SUMMARY FUNCTION
     def add_semantics(self, kernel):
@@ -33,6 +42,7 @@ class ArchSemantics(ISASemantics):
 
         :param list kernel: kernel to apply semantics
         """
+        self._check_normalized(kernel)
         for instruction_form in kernel:
             self.assign_src_dst(instruction_form)
             self.assign_tp_lt(instruction_form)
@@ -45,6 +55,7 @@ class ArchSemantics(ISASemantics):
 
         :param list kernel: kernel to apply optimal port utilization
         """
+        self._check_normalized(kernel)
         INC = 0.01
         kernel.reverse()
         port_list = self._machine_model.get_ports()
@@ -141,6 +152,7 @@ class ArchSemantics(ISASemantics):
 
     def set_hidden_loads(self, kernel):
         """Hide loads behind stores if architecture supports hidden loads (depricated)"""
+        self._check_normalized(kernel)
         loads = [instr for instr in kernel if INSTR_FLAGS.HAS_LD in instr.flags]
         stores = [instr for instr in kernel if INSTR_FLAGS.HAS_ST in instr.flags]
         # Filter instructions including load and store
@@ -180,6 +192,7 @@ class ArchSemantics(ISASemantics):
     # mark instruction form with semantic flags
     def assign_tp_lt(self, instruction_form):
         """Assign throughput and latency to an instruction form."""
+        instruction_form.check_normalized()
         flags = []
         port_number = len(self._machine_model["ports"])
         if instruction_form.mnemonic is None:
@@ -372,6 +385,7 @@ class ArchSemantics(ISASemantics):
 
     def _handle_instruction_found(self, instruction_data, port_number, instruction_form, flags):
         """Apply performance data to instruction if it was found in the archDB"""
+        instruction_form.check_normalized()
         throughput = instruction_data.throughput
         port_pressure = self._machine_model.average_port_pressure(instruction_data.port_pressure)
         instruction_form.port_uops = instruction_data.port_pressure

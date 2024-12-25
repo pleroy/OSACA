@@ -53,9 +53,9 @@ class ParserAArch64(BaseParser):
             )
         ]
 
-    def normalize_instruction_forms(
+    def normalize_instruction_form(
         self,
-        instruction_forms,
+        instruction_form,
         isa_model: MachineModel,
         arch_model: MachineModel
     ):
@@ -63,19 +63,22 @@ class ParserAArch64(BaseParser):
         If the instruction doesn't exist in the machine model, normalize it by dropping the shape
         suffix.
         """
-        for instruction_form in instruction_forms:
-            mnemonic = instruction_form.mnemonic
-            if not mnemonic:
-                continue
-            model = arch_model.get_instruction(mnemonic, instruction_form.operands)
-            if not model:
-                if "." in mnemonic:
-                    # Check for instruction without shape/cc suffix.
-                    suffix_start = mnemonic.index(".")
-                    mnemonic = mnemonic[:suffix_start]
-                    model = arch_model.get_instruction(mnemonic, instruction_form.operands)
-                    if model:
-                        instruction_form.mnemonic = mnemonic
+        if instruction_form.normalized:
+            return
+        instruction_form.normalized = True
+
+        mnemonic = instruction_form.mnemonic
+        if not mnemonic:
+            return
+        model = arch_model.get_instruction(mnemonic, instruction_form.operands)
+        if not model:
+            if "." in mnemonic:
+                # Check for instruction without shape/cc suffix.
+                suffix_start = mnemonic.index(".")
+                mnemonic = mnemonic[:suffix_start]
+                model = arch_model.get_instruction(mnemonic, instruction_form.operands)
+                if model:
+                    instruction_form.mnemonic = mnemonic
 
     def construct_parser(self):
         """Create parser for ARM AArch64 ISA."""
