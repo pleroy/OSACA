@@ -360,12 +360,13 @@ def inspect(args, output_file=sys.stdout):
         parser = get_asm_parser(arch, syntax)
         try:
             parsed_code = parser.parse_file(code)
-            combinations_to_try -= {(arch, syntax)}
+            break
         except Exception as e:
             # Probably the wrong parser based on heuristic.
             if not combinations_to_try:
                 raise e
-            arch, syntax = combinations_to_try.pop();
+        combinations_to_try -= {(arch, syntax)}
+        arch, syntax = combinations_to_try.pop();
 
     # Reduce to marked kernel or chosen section and add semantics
     if args.lines:
@@ -379,7 +380,8 @@ def inspect(args, output_file=sys.stdout):
             True if len(kernel) == len(parsed_code) and len(kernel) > 100 else False
         )
     machine_model = MachineModel(arch=arch)
-    semantics = ArchSemantics(machine_model)
+    semantics = ArchSemantics(parser, machine_model)
+    semantics.normalize_instruction_forms(kernel)
     semantics.add_semantics(kernel)
     # Do optimal schedule for kernel throughput if wished
     if not args.fixed:
@@ -459,7 +461,7 @@ def get_asm_parser(arch, syntax) -> BaseParser:
     """
     isa = MachineModel.get_isa_for_arch(arch)
     if isa == "x86":
-        return ParserX86ATT() if syntax == "AT&T" else ParserX86Intel()
+        return ParserX86ATT() if syntax == "ATT" else ParserX86Intel()
     elif isa == "aarch64":
         return ParserAArch64()
 
