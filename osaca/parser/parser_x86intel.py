@@ -184,7 +184,7 @@ class ParserX86Intel(ParserX86):
         # Identifier.  Note that $ is not mentioned in the ASM386 Assembly Language Reference,
         # but it is mentioned in the MASM syntax
         first = pp.Word(pp.alphas + "$?@_", exact=1)
-        rest = pp.Word(pp.alphanums + "$?@_")
+        rest = pp.Word(pp.alphanums + "$?@_<>")
         identifier = pp.Group(
             pp.Combine(first + pp.Optional(rest)).setResultsName("name")
         ).setResultsName("identifier")
