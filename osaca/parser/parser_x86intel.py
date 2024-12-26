@@ -340,6 +340,7 @@ class ParserX86Intel(ParserX86):
             self.register.setResultsName("segment") + pp.Literal(":") + immediate
             ^ immediate + register_expression
             ^ register_expression
+            ^ identifier + pp.Literal("+") + immediate
         ).setResultsName("address_expression")
 
         offset_expression = pp.Group(
@@ -660,6 +661,10 @@ class ParserX86Intel(ParserX86):
             self.process_register(address_expression.segment)
             if "segment" in address_expression else None
         )
+        identifier = (
+            self.process_identifier(address_expression.identifier)
+            if "identifier" in address_expression else None
+        )
         if register_expression:
             if immediate_operand:
                 register_expression.offset = immediate_operand
@@ -668,6 +673,8 @@ class ParserX86Intel(ParserX86):
             return register_expression
         elif segment:
             return MemoryOperand(base=segment, offset=immediate_operand, data_type=data_type)
+        elif identifier:
+            return MemoryOperand(base=identifier, offset=immediate_operand)
         else:
             return MemoryOperand(base=immediate_operand, data_type=data_type)
 
