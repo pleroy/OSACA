@@ -182,8 +182,8 @@ class ParserX86Intel(ParserX86):
         ).setResultsName("data_type")
 
         # Identifier.  Note that $ is not mentioned in the ASM386 Assembly Language Reference,
-        # but it is mentioned in the MASM syntax
-        first = pp.Word(pp.alphas + "$?@_", exact=1)
+        # but it is mentioned in the MASM syntax.  < and > apparently show up in C++ mangled names.
+        first = pp.Word(pp.alphas + "$?@_<>", exact=1)
         rest = pp.Word(pp.alphanums + "$?@_<>")
         identifier = pp.Group(
             pp.Combine(first + pp.Optional(rest)).setResultsName("name")
