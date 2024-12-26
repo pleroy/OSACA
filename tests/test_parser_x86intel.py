@@ -91,6 +91,7 @@ class TestParserX86Intel(unittest.TestCase):
         instr8 = "\tmov\tBYTE PTR gs:111, al"
         instr9 = "\tlea\tr8, QWORD PTR [r8*4]"
         instr10 = "\tmovsd\txmm1, QWORD PTR boost@@XZ@4V456@A+16"
+        instr11 = "\tlea\trcx, OFFSET FLAT:??_R0N@8+8"
 
         parsed_1 = self.parser.parse_instruction(instr1)
         parsed_2 = self.parser.parse_instruction(instr2)
@@ -102,6 +103,7 @@ class TestParserX86Intel(unittest.TestCase):
         parsed_8 = self.parser.parse_instruction(instr8)
         parsed_9 = self.parser.parse_instruction(instr9)
         parsed_10 = self.parser.parse_instruction(instr10)
+        parsed_11 = self.parser.parse_instruction(instr11)
 
         self.assertEqual(parsed_1.mnemonic, "sub")
         self.assertEqual(parsed_1.operands[0],
@@ -172,6 +174,13 @@ class TestParserX86Intel(unittest.TestCase):
         self.assertEqual(parsed_10.operands[1],
                          MemoryOperand(base=IdentifierOperand(name="boost@@XZ@4V456@A"),
                                        offset=ImmediateOperand(value=16)))
+
+        self.assertEqual(parsed_11.mnemonic, "lea")
+        self.assertEqual(parsed_11.operands[0],
+                         RegisterOperand(name="RCX"))
+        self.assertEqual(parsed_11.operands[1],
+                         MemoryOperand(base=IdentifierOperand(name="??_R0N@8"),
+                                       offset=ImmediateOperand(value=8)))
 
     def test_parse_line(self):
         line_comment = "; -- Begin  main"

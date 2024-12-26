@@ -353,7 +353,8 @@ class ParserX86Intel(ParserX86):
             # The MASM grammar has the ":" immediately after "OFFSET", but that's not what MSVC
             # outputs.
             + pp.Literal(":")
-            + identifier
+            + identifier.setResultsName("base")
+            + pp.Optional(pp.Literal("+") + immediate.setResultsName("displacement"))
         ).setResultsName("offset_expression")
         ptr_expression = pp.Group(
             data_type + pp.CaselessKeyword("PTR") + address_expression
@@ -680,7 +681,12 @@ class ParserX86Intel(ParserX86):
 
     def process_offset_expression(self, offset_expression):
         # TODO: Record that this is an offset expression.
-        return MemoryOperand(base=self.process_identifier(offset_expression.identifier))
+        displacement = (
+            self.process_immediate(offset_expression.displacement)
+            if "displacement" in offset_expression else None
+        )
+        return MemoryOperand(base=self.process_identifier(offset_expression.base),
+                             offset=displacement)
 
     def process_ptr_expression(self, ptr_expression):
         # TODO: Do something with the data_type.
