@@ -308,14 +308,21 @@ class ParserX86Intel(ParserX86):
             (pp.Literal("+") ^ pp.Literal("-")).setResultsName("sign")
             + integer_number | identifier
         ).setResultsName(self.immediate_id)
+        indexed = pp.Group(
+            index_register.setResultsName("index")
+            + pp.Optional(pp.Literal("*")
+            + scale.setResultsName("scale"))
+        ).setResultsName("indexed")
         register_expression = pp.Group(
             pp.Literal("[")
-            + pp.Optional(base_register.setResultsName("base"))
-            + pp.Optional(
-                pp.Literal("+")
-                + index_register.setResultsName("index")
-                + pp.Optional(pp.Literal("*") + scale.setResultsName("scale"))
-            )
+            + pp.Group(
+                base_register.setResultsName("base")
+                ^ pp.Group(
+                    base_register.setResultsName("base")
+                    + pp.Literal("+")
+                    + indexed).setResultsName("base_and_indexed")
+                ^ indexed
+               ).setResultsName("pre_displacement")
             + pp.Optional(pp.Group(displacement).setResultsName("displacement"))
             + pp.Literal("]")
         ).setResultsName("register_expression")
@@ -614,9 +621,24 @@ class ParserX86Intel(ParserX86):
 
     def process_register_expression(self, register_expression):
         displacement = register_expression.get("displacement")
-        base = register_expression.get("base")
-        index = register_expression.get("index")
-        scale = int(register_expression.get("scale", "1"), 0)
+        pre_displacement = register_expression.get("pre_displacement")
+        base = None
+        indexed = None
+        if pre_displacement:
+            base_and_indexed = pre_displacement.get("base_and_indexed")
+            if base_and_indexed:
+                base = base_and_indexed.get("base")
+                indexed = base_and_indexed.get("indexed")
+            else:
+                base = pre_displacement.get("base")
+                if not base:
+                    indexed = pre_displacement.get("indexed")
+        if indexed:
+            index = indexed.get("index")
+            scale = int(indexed.get("scale", "1"), 0)
+        else:
+            index = None
+            scale = 1
         displacement_op = self.process_immediate(displacement.immediate) if displacement else None
         base_op = RegisterOperand(name=base.name) if base else None
         index_op = RegisterOperand(name=index.name) if index else None
