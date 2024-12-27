@@ -82,6 +82,29 @@ class ParserX86Intel(ParserX86):
         if not mnemonic:
             return
 
+        # The model may only contain the VEX-encoded instruction and we may have the non-VEX-encoded
+        # one, or vice-versa.  Note that this doesn't work when the arguments differ between VEX-
+        # encoded and non-VEX-encoded, e.g., for psubq.
+        if not arch_model.get_instruction(
+            mnemonic,
+            len(instruction_form.operands)
+        ):
+            if mnemonic[0] == 'v':
+                unvexed_mnemonic = mnemonic[1:]
+                if arch_model.get_instruction(
+                    unvexed_mnemonic,
+                    len(instruction_form.operands)
+                ):
+                    mnemonic = unvexed_mnemonic
+            else:
+                vexed_mnemonic = 'v' + mnemonic
+                if arch_model.get_instruction(
+                    vexed_mnemonic,
+                    len(instruction_form.operands)
+                ):
+                    mnemonic = vexed_mnemonic
+            instruction_form.mnemonic = mnemonic
+
         # We cannot pass the operands because they may not match before the reordering.  We just
         # pass the arity instead.  Also, this must use the ISA model, because that's where the
         # source/destination information is found.
@@ -671,6 +694,10 @@ class ParserX86Intel(ParserX86):
         elif identifier:
             if immediate_operand:
                 identifier.offset = immediate_operand
+            elif not data_type:
+                # An address expression without a data type or an offset is just an identifier.
+                # This matters for jumps.
+                return identifier
             return MemoryOperand(offset=identifier, data_type=data_type)
         else:
             return MemoryOperand(base=immediate_operand, data_type=data_type)
