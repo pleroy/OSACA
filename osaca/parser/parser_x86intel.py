@@ -33,12 +33,10 @@ class ParserX86Intel(ParserX86):
 
     # The IACA manual says: "For For Microsoft* Visual C++ compiler, 64-bit version, use
     # IACA_VC64_START and IACA_VC64_END, instead" (of IACA_START and IACA_END).
+    # TODO: Inconveniently, the code generated with optimization disabled (/Od) has two
+    # instructions.  We should support both patterns, but then who runs OSACA with /Od?
     def start_marker(self):
         return [
-            InstructionForm(
-                mnemonic="mov",
-                operands=[RegisterOperand(name="AL"), ImmediateOperand(value=111)]
-            ),
             InstructionForm(
                 mnemonic="mov",
                 operands=[
@@ -46,7 +44,7 @@ class ParserX86Intel(ParserX86):
                         base=RegisterOperand(name="GS"),
                         offset=ImmediateOperand(value=111)
                     ),
-                    RegisterOperand(name="AL")
+                    ImmediateOperand(value=111)
                 ]
             ),
         ]
@@ -55,16 +53,12 @@ class ParserX86Intel(ParserX86):
         return [
             InstructionForm(
                 mnemonic="mov",
-                operands=[RegisterOperand(name="AL"), ImmediateOperand(value=222)]
-            ),
-            InstructionForm(
-                mnemonic="mov",
                 operands=[
                     MemoryOperand(
                         base=RegisterOperand(name="GS"),
                         offset=ImmediateOperand(value=222)
                     ),
-                    RegisterOperand(name="AL")
+                    ImmediateOperand(value=222)
                 ]
             ),
         ]
