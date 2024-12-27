@@ -334,7 +334,7 @@ class ParserX86Intel(ParserX86):
             self.register.setResultsName("segment") + pp.Literal(":") + immediate
             ^ immediate + register_expression
             ^ register_expression
-            ^ identifier + pp.Literal("+") + immediate
+            ^ identifier + pp.Optional(pp.Literal("+") + immediate)
         ).setResultsName("address_expression")
 
         offset_expression = pp.Group(
