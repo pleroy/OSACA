@@ -152,7 +152,7 @@ class TestParserX86Intel(unittest.TestCase):
         self.assertEqual(parsed_7.operands[0],
                          RegisterOperand(name="RCX"))
         self.assertEqual(parsed_7.operands[1],
-                         MemoryOperand(base=IdentifierOperand(name="__FAC6D534_triad@c")))
+                         MemoryOperand(offset=IdentifierOperand(name="__FAC6D534_triad@c")))
 
         self.assertEqual(parsed_8.mnemonic, "mov")
         self.assertEqual(parsed_8.operands[0],
@@ -174,15 +174,15 @@ class TestParserX86Intel(unittest.TestCase):
         self.assertEqual(parsed_10.operands[0],
                          RegisterOperand(name="XMM1"))
         self.assertEqual(parsed_10.operands[1],
-                         MemoryOperand(base=IdentifierOperand(name="boost@@XZ@4V456@A"),
-                                       offset=ImmediateOperand(value=16)))
+                         MemoryOperand(offset=IdentifierOperand(name="boost@@XZ@4V456@A",
+                                                                offset=ImmediateOperand(value=16))))
 
         self.assertEqual(parsed_11.mnemonic, "lea")
         self.assertEqual(parsed_11.operands[0],
                          RegisterOperand(name="RCX"))
         self.assertEqual(parsed_11.operands[1],
-                         MemoryOperand(base=IdentifierOperand(name="??_R0N@8"),
-                                       offset=ImmediateOperand(value=8)))
+                         MemoryOperand(offset=IdentifierOperand(name="??_R0N@8",
+                                                                offset=ImmediateOperand(value=8))))
 
         self.assertEqual(parsed_12.mnemonic, "vfmadd213sd")
         self.assertEqual(parsed_12.operands[0],
@@ -190,7 +190,7 @@ class TestParserX86Intel(unittest.TestCase):
         self.assertEqual(parsed_12.operands[1],
                          RegisterOperand(name="XMM1"))
         self.assertEqual(parsed_12.operands[2],
-                         MemoryOperand(base=IdentifierOperand(name="__real@bfc5555555555555")))
+                         MemoryOperand(offset=IdentifierOperand(name="__real@bfc5555555555555")))
 
     def test_parse_line(self):
         line_comment = "; -- Begin  main"
