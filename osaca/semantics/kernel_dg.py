@@ -185,11 +185,11 @@ class KernelDG(nx.DiGraph):
             for s, d in nx.utils.pairwise(path):
                 edge_lat = dg.edges[s, d]["latency"]
                 # map source node back to original line numbers
-                if s >= offset:
+                if s > offset:
                     s -= offset
                 lat_path.append((s, edge_lat))
                 lat_sum += edge_lat
-            if d >= offset:
+            if d > offset:
                 d -= offset
             lat_path.sort()
 
