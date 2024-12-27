@@ -110,8 +110,8 @@ class ParserX86Intel(ParserX86):
         # source/destination information is found.
         model = isa_model.get_instruction(mnemonic, len(instruction_form.operands))
         has_single_destination_at_end = False
+        has_destination = False
         if model:
-            has_destination = False
             for o in model.operands:
                 if o.source:
                     if has_destination:
@@ -125,12 +125,27 @@ class ParserX86Intel(ParserX86):
         else:
             # if there is only one operand, assume it is a source operand
             has_single_destination_at_end = len(instruction_form.operands) > 1
+
         # TODO: This doesn't do the right thing for vinsertf128, the immediate operand is first
         # in the AT&T syntax and last in the Intel syntax.
         if has_single_destination_at_end:
             sources = instruction_form.operands[1:]
             destination = instruction_form.operands[0]
             instruction_form.operands = sources + [destination]
+
+        # A hack to help with comparison instruction: if the instruction is in the model, and has
+        # exactly two sources, swap its operands.
+        if (model and
+            not has_destination and
+            len(instruction_form.operands) == 2
+            and not isa_model.get_instruction(
+                mnemonic,
+                instruction_form.operands
+            ) and not arch_model.get_instruction(
+                mnemonic,
+                instruction_form.operands
+            )):
+            instruction_form.operands.reverse()
 
         # If the instruction has a well-known data type, append a suffix.
         data_type_to_suffix = {"DWORD": "d", "QWORD": "q"}
