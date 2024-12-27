@@ -131,7 +131,7 @@ class TestParserX86Intel(unittest.TestCase):
         self.assertEqual(parsed_4.operands[1],
                          MemoryOperand(offset=ImmediateOperand(
                                             identifier="cur_elements$",
-                                            value=328
+                                            value=104
                                        ),
                                        base=RegisterOperand(name="RBP")))
 
@@ -264,16 +264,16 @@ class TestParserX86Intel(unittest.TestCase):
         parsed = self.parser.parse_file(self.triad_iaca_code)
         self.assertEqual(parsed[0].line_number, 1)
         # Check a few lines to make sure that we produced something reasonable.
-        self.assertEqual(parsed[76],
+        self.assertEqual(parsed[68],
                          InstructionForm(directive_id=DirectiveOperand(name="=",
-                                                                       parameters=["c$", "304"]),
-                                         line="c$ = 304",
-                                         line_number=80))
-        self.assertEqual(parsed[153],
+                                                                       parameters=["s$", "88"]),
+                                         line="s$ = 88",
+                                         line_number=72))
+        self.assertEqual(parsed[135],
                          InstructionForm(directive_id=DirectiveOperand(name="END"),
                                          line="END",
-                                         line_number=157))
-        self.assertEqual(len(parsed), 154)
+                                         line_number=139))
+        self.assertEqual(len(parsed), 136)
 
     def test_normalize_imd(self):
         imd_binary = ImmediateOperand(value="1001111B")
