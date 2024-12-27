@@ -89,6 +89,8 @@ def find_marked_section(lines, parser, comments=None):
     # TODO match to instructions returned by get_marker
     index_start = -1
     index_end = -1
+    start_marker = parser.start_marker()
+    end_marker = parser.end_marker()
     for i, line in enumerate(lines):
         try:
             if line.mnemonic is None and comments is not None and line.comment is not None:
@@ -97,13 +99,11 @@ def find_marked_section(lines, parser, comments=None):
                 elif comments["end"] == line.comment:
                     index_end = i
             if index_start == -1:
-                start_marker = parser.start_marker()
                 matching_lines = match_lines(parser, lines[i:], start_marker)
                 if matching_lines > 0:
                     # Return the first line after the marker.
                     index_start = i + matching_lines
             if index_end == -1:
-                end_marker = parser.end_marker()
                 if match_lines(parser, lines[i:], end_marker):
                     index_end = i
         except TypeError as e:

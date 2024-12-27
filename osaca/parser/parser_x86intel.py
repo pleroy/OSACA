@@ -33,12 +33,10 @@ class ParserX86Intel(ParserX86):
 
     # The IACA manual says: "For For Microsoft* Visual C++ compiler, 64-bit version, use
     # IACA_VC64_START and IACA_VC64_END, instead" (of IACA_START and IACA_END).
+    # TODO: Inconveniently, the code generated with optimization disabled (/Od) has two
+    # instructions.  We should support both patterns, but then who runs OSACA with /Od?
     def start_marker(self):
         return [
-            InstructionForm(
-                mnemonic="mov",
-                operands=[RegisterOperand(name="AL"), ImmediateOperand(value=111)]
-            ),
             InstructionForm(
                 mnemonic="mov",
                 operands=[
@@ -46,7 +44,7 @@ class ParserX86Intel(ParserX86):
                         base=RegisterOperand(name="GS"),
                         offset=ImmediateOperand(value=111)
                     ),
-                    RegisterOperand(name="AL")
+                    ImmediateOperand(value=111)
                 ]
             ),
         ]
@@ -55,16 +53,12 @@ class ParserX86Intel(ParserX86):
         return [
             InstructionForm(
                 mnemonic="mov",
-                operands=[RegisterOperand(name="AL"), ImmediateOperand(value=222)]
-            ),
-            InstructionForm(
-                mnemonic="mov",
                 operands=[
                     MemoryOperand(
                         base=RegisterOperand(name="GS"),
                         offset=ImmediateOperand(value=222)
                     ),
-                    RegisterOperand(name="AL")
+                    ImmediateOperand(value=222)
                 ]
             ),
         ]
@@ -182,9 +176,9 @@ class ParserX86Intel(ParserX86):
         ).setResultsName("data_type")
 
         # Identifier.  Note that $ is not mentioned in the ASM386 Assembly Language Reference,
-        # but it is mentioned in the MASM syntax
-        first = pp.Word(pp.alphas + "$?@_", exact=1)
-        rest = pp.Word(pp.alphanums + "$?@_")
+        # but it is mentioned in the MASM syntax.  < and > apparently show up in C++ mangled names.
+        first = pp.Word(pp.alphas + "$?@_<>", exact=1)
+        rest = pp.Word(pp.alphanums + "$?@_<>")
         identifier = pp.Group(
             pp.Combine(first + pp.Optional(rest)).setResultsName("name")
         ).setResultsName("identifier")
@@ -308,14 +302,21 @@ class ParserX86Intel(ParserX86):
             (pp.Literal("+") ^ pp.Literal("-")).setResultsName("sign")
             + integer_number | identifier
         ).setResultsName(self.immediate_id)
+        indexed = pp.Group(
+            index_register.setResultsName("index")
+            + pp.Optional(pp.Literal("*")
+            + scale.setResultsName("scale"))
+        ).setResultsName("indexed")
         register_expression = pp.Group(
             pp.Literal("[")
-            + pp.Optional(base_register.setResultsName("base"))
-            + pp.Optional(
-                pp.Literal("+")
-                + index_register.setResultsName("index")
-                + pp.Optional(pp.Literal("*") + scale.setResultsName("scale"))
-            )
+            + pp.Group(
+                base_register.setResultsName("base")
+                ^ pp.Group(
+                    base_register.setResultsName("base")
+                    + pp.Literal("+")
+                    + indexed).setResultsName("base_and_indexed")
+                ^ indexed
+               ).setResultsName("pre_displacement")
             + pp.Optional(pp.Group(displacement).setResultsName("displacement"))
             + pp.Literal("]")
         ).setResultsName("register_expression")
@@ -333,6 +334,7 @@ class ParserX86Intel(ParserX86):
             self.register.setResultsName("segment") + pp.Literal(":") + immediate
             ^ immediate + register_expression
             ^ register_expression
+            ^ identifier + pp.Literal("+") + immediate
         ).setResultsName("address_expression")
 
         offset_expression = pp.Group(
@@ -345,7 +347,8 @@ class ParserX86Intel(ParserX86):
             # The MASM grammar has the ":" immediately after "OFFSET", but that's not what MSVC
             # outputs.
             + pp.Literal(":")
-            + identifier
+            + identifier.setResultsName("base")
+            + pp.Optional(pp.Literal("+") + immediate.setResultsName("displacement"))
         ).setResultsName("offset_expression")
         ptr_expression = pp.Group(
             data_type + pp.CaselessKeyword("PTR") + address_expression
@@ -614,9 +617,24 @@ class ParserX86Intel(ParserX86):
 
     def process_register_expression(self, register_expression):
         displacement = register_expression.get("displacement")
-        base = register_expression.get("base")
-        index = register_expression.get("index")
-        scale = int(register_expression.get("scale", "1"), 0)
+        pre_displacement = register_expression.get("pre_displacement")
+        base = None
+        indexed = None
+        if pre_displacement:
+            base_and_indexed = pre_displacement.get("base_and_indexed")
+            if base_and_indexed:
+                base = base_and_indexed.get("base")
+                indexed = base_and_indexed.get("indexed")
+            else:
+                base = pre_displacement.get("base")
+                if not base:
+                    indexed = pre_displacement.get("indexed")
+        if indexed:
+            index = indexed.get("index")
+            scale = int(indexed.get("scale", "1"), 0)
+        else:
+            index = None
+            scale = 1
         displacement_op = self.process_immediate(displacement.immediate) if displacement else None
         base_op = RegisterOperand(name=base.name) if base else None
         index_op = RegisterOperand(name=index.name) if index else None
@@ -638,6 +656,10 @@ class ParserX86Intel(ParserX86):
             self.process_register(address_expression.segment)
             if "segment" in address_expression else None
         )
+        identifier = (
+            self.process_identifier(address_expression.identifier)
+            if "identifier" in address_expression else None
+        )
         if register_expression:
             if immediate_operand:
                 register_expression.offset = immediate_operand
@@ -646,12 +668,19 @@ class ParserX86Intel(ParserX86):
             return register_expression
         elif segment:
             return MemoryOperand(base=segment, offset=immediate_operand, data_type=data_type)
+        elif identifier:
+            return MemoryOperand(base=identifier, offset=immediate_operand)
         else:
             return MemoryOperand(base=immediate_operand, data_type=data_type)
 
     def process_offset_expression(self, offset_expression):
         # TODO: Record that this is an offset expression.
-        return MemoryOperand(base=self.process_identifier(offset_expression.identifier))
+        displacement = (
+            self.process_immediate(offset_expression.displacement)
+            if "displacement" in offset_expression else None
+        )
+        return MemoryOperand(base=self.process_identifier(offset_expression.base),
+                             offset=displacement)
 
     def process_ptr_expression(self, ptr_expression):
         # TODO: Do something with the data_type.

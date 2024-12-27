@@ -49,9 +49,9 @@ class TestMarkerUtils(unittest.TestCase):
 
     def test_marker_detection_x86_intel(self):
         kernel = reduce_to_section(self.parsed_x86_intel, ParserX86Intel())
-        self.assertEqual(len(kernel), 14)
-        self.assertEqual(kernel[0].line_number, 124)
-        self.assertEqual(kernel[-1].line_number, 137)
+        self.assertEqual(len(kernel), 7)
+        self.assertEqual(kernel[0].line_number, 111)
+        self.assertEqual(kernel[-1].line_number, 117)
 
     def test_marker_matching_AArch64(self):
         # preparation

@@ -89,6 +89,9 @@ class TestParserX86Intel(unittest.TestCase):
         instr6 = "\tjmp\tSHORT $LN2@kernel"
         instr7 = "\tlea\trcx, OFFSET FLAT:__FAC6D534_triad@c"
         instr8 = "\tmov\tBYTE PTR gs:111, al"
+        instr9 = "\tlea\tr8, QWORD PTR [r8*4]"
+        instr10 = "\tmovsd\txmm1, QWORD PTR boost@@XZ@4V456@A+16"
+        instr11 = "\tlea\trcx, OFFSET FLAT:??_R0N@8+8"
 
         parsed_1 = self.parser.parse_instruction(instr1)
         parsed_2 = self.parser.parse_instruction(instr2)
@@ -98,6 +101,9 @@ class TestParserX86Intel(unittest.TestCase):
         parsed_6 = self.parser.parse_instruction(instr6)
         parsed_7 = self.parser.parse_instruction(instr7)
         parsed_8 = self.parser.parse_instruction(instr8)
+        parsed_9 = self.parser.parse_instruction(instr9)
+        parsed_10 = self.parser.parse_instruction(instr10)
+        parsed_11 = self.parser.parse_instruction(instr11)
 
         self.assertEqual(parsed_1.mnemonic, "sub")
         self.assertEqual(parsed_1.operands[0],
@@ -125,7 +131,7 @@ class TestParserX86Intel(unittest.TestCase):
         self.assertEqual(parsed_4.operands[1],
                          MemoryOperand(offset=ImmediateOperand(
                                             identifier="cur_elements$",
-                                            value=328
+                                            value=104
                                        ),
                                        base=RegisterOperand(name="RBP")))
 
@@ -153,6 +159,28 @@ class TestParserX86Intel(unittest.TestCase):
                              offset=ImmediateOperand(value=111)))
         self.assertEqual(parsed_8.operands[1],
                          RegisterOperand(name="AL"))
+
+        self.assertEqual(parsed_9.mnemonic, "lea")
+        self.assertEqual(parsed_9.operands[0],
+                         RegisterOperand(name="R8"))
+        self.assertEqual(parsed_9.operands[1],
+                         MemoryOperand(base=None,
+                                       index=RegisterOperand(name="R8"),
+                                       scale=4))
+
+        self.assertEqual(parsed_10.mnemonic, "movsd")
+        self.assertEqual(parsed_10.operands[0],
+                         RegisterOperand(name="XMM1"))
+        self.assertEqual(parsed_10.operands[1],
+                         MemoryOperand(base=IdentifierOperand(name="boost@@XZ@4V456@A"),
+                                       offset=ImmediateOperand(value=16)))
+
+        self.assertEqual(parsed_11.mnemonic, "lea")
+        self.assertEqual(parsed_11.operands[0],
+                         RegisterOperand(name="RCX"))
+        self.assertEqual(parsed_11.operands[1],
+                         MemoryOperand(base=IdentifierOperand(name="??_R0N@8"),
+                                       offset=ImmediateOperand(value=8)))
 
     def test_parse_line(self):
         line_comment = "; -- Begin  main"
@@ -236,16 +264,16 @@ class TestParserX86Intel(unittest.TestCase):
         parsed = self.parser.parse_file(self.triad_iaca_code)
         self.assertEqual(parsed[0].line_number, 1)
         # Check a few lines to make sure that we produced something reasonable.
-        self.assertEqual(parsed[76],
+        self.assertEqual(parsed[68],
                          InstructionForm(directive_id=DirectiveOperand(name="=",
-                                                                       parameters=["c$", "304"]),
-                                         line="c$ = 304",
-                                         line_number=80))
-        self.assertEqual(parsed[153],
+                                                                       parameters=["s$", "88"]),
+                                         line="s$ = 88",
+                                         line_number=72))
+        self.assertEqual(parsed[135],
                          InstructionForm(directive_id=DirectiveOperand(name="END"),
                                          line="END",
-                                         line_number=157))
-        self.assertEqual(len(parsed), 154)
+                                         line_number=139))
+        self.assertEqual(len(parsed), 136)
 
     def test_normalize_imd(self):
         imd_binary = ImmediateOperand(value="1001111B")
