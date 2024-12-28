@@ -82,13 +82,36 @@ class ParserX86Intel(ParserX86):
         if not mnemonic:
             return
 
+        # The model may only contain the VEX-encoded instruction and we may have the non-VEX-encoded
+        # one, or vice-versa.  Note that this doesn't work when the arguments differ between VEX-
+        # encoded and non-VEX-encoded, e.g., for psubq.
+        if not arch_model.get_instruction(
+            mnemonic,
+            len(instruction_form.operands)
+        ):
+            if mnemonic[0] == 'v':
+                unvexed_mnemonic = mnemonic[1:]
+                if arch_model.get_instruction(
+                    unvexed_mnemonic,
+                    len(instruction_form.operands)
+                ):
+                    mnemonic = unvexed_mnemonic
+            else:
+                vexed_mnemonic = 'v' + mnemonic
+                if arch_model.get_instruction(
+                    vexed_mnemonic,
+                    len(instruction_form.operands)
+                ):
+                    mnemonic = vexed_mnemonic
+            instruction_form.mnemonic = mnemonic
+
         # We cannot pass the operands because they may not match before the reordering.  We just
         # pass the arity instead.  Also, this must use the ISA model, because that's where the
         # source/destination information is found.
         model = isa_model.get_instruction(mnemonic, len(instruction_form.operands))
         has_single_destination_at_end = False
+        has_destination = False
         if model:
-            has_destination = False
             for o in model.operands:
                 if o.source:
                     if has_destination:
@@ -102,12 +125,27 @@ class ParserX86Intel(ParserX86):
         else:
             # if there is only one operand, assume it is a source operand
             has_single_destination_at_end = len(instruction_form.operands) > 1
+
         # TODO: This doesn't do the right thing for vinsertf128, the immediate operand is first
         # in the AT&T syntax and last in the Intel syntax.
         if has_single_destination_at_end:
             sources = instruction_form.operands[1:]
             destination = instruction_form.operands[0]
             instruction_form.operands = sources + [destination]
+
+        # A hack to help with comparison instruction: if the instruction is in the model, and has
+        # exactly two sources, swap its operands.
+        if (model and
+            not has_destination and
+            len(instruction_form.operands) == 2
+            and not isa_model.get_instruction(
+                mnemonic,
+                instruction_form.operands
+            ) and not arch_model.get_instruction(
+                mnemonic,
+                instruction_form.operands
+            )):
+            instruction_form.operands.reverse()
 
         # If the instruction has a well-known data type, append a suffix.
         data_type_to_suffix = {"DWORD": "d", "QWORD": "q"}
@@ -334,7 +372,7 @@ class ParserX86Intel(ParserX86):
             self.register.setResultsName("segment") + pp.Literal(":") + immediate
             ^ immediate + register_expression
             ^ register_expression
-            ^ identifier + pp.Literal("+") + immediate
+            ^ identifier + pp.Optional(pp.Literal("+") + immediate)
         ).setResultsName("address_expression")
 
         offset_expression = pp.Group(
@@ -347,7 +385,7 @@ class ParserX86Intel(ParserX86):
             # The MASM grammar has the ":" immediately after "OFFSET", but that's not what MSVC
             # outputs.
             + pp.Literal(":")
-            + identifier.setResultsName("base")
+            + identifier.setResultsName("identifier")
             + pp.Optional(pp.Literal("+") + immediate.setResultsName("displacement"))
         ).setResultsName("offset_expression")
         ptr_expression = pp.Group(
@@ -669,7 +707,13 @@ class ParserX86Intel(ParserX86):
         elif segment:
             return MemoryOperand(base=segment, offset=immediate_operand, data_type=data_type)
         elif identifier:
-            return MemoryOperand(base=identifier, offset=immediate_operand)
+            if immediate_operand:
+                identifier.offset = immediate_operand
+            elif not data_type:
+                # An address expression without a data type or an offset is just an identifier.
+                # This matters for jumps.
+                return identifier
+            return MemoryOperand(offset=identifier, data_type=data_type)
         else:
             return MemoryOperand(base=immediate_operand, data_type=data_type)
 
@@ -679,8 +723,9 @@ class ParserX86Intel(ParserX86):
             self.process_immediate(offset_expression.displacement)
             if "displacement" in offset_expression else None
         )
-        return MemoryOperand(base=self.process_identifier(offset_expression.base),
-                             offset=displacement)
+        identifier = self.process_identifier(offset_expression.identifier)
+        identifier.offset = displacement
+        return MemoryOperand(offset=identifier)
 
     def process_ptr_expression(self, ptr_expression):
         # TODO: Do something with the data_type.
