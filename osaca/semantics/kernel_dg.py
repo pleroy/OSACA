@@ -412,7 +412,7 @@ class KernelDG(nx.DiGraph):
             addr_change = 0
             if isinstance(src.offset, ImmediateOperand) and src.offset.value is not None:
                 addr_change += src.offset.value
-            if mem.offset:
+            if isinstance(mem.offset, ImmediateOperand) and mem.offset.value is not None:
                 addr_change -= mem.offset.value
             if mem.base and src.base:
                 base_change = register_changes.get(
