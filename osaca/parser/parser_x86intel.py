@@ -3,6 +3,7 @@
 import pyparsing as pp
 import re
 import string
+import unicodedata
 
 from osaca.parser import ParserX86
 from osaca.parser.directive import DirectiveOperand
@@ -13,6 +14,20 @@ from osaca.parser.label import LabelOperand
 from osaca.parser.memory import MemoryOperand
 from osaca.parser.register import RegisterOperand
 from osaca.semantics.hw_model import MachineModel
+
+# Unicode 3.0-style definition because we do not have the UCD in the Python standard library, see
+# the derivation in Table 2 of UAX #31.
+IDENTIFIER_START_CHARACTERS = "".join(
+    chr(cp)
+    for cp in range(0x10FFFF)
+    if unicodedata.category(chr(cp)).startswith("L") or unicodedata.category(chr(cp)) == "Nl"
+)
+
+IDENTIFIER_CONTINUE_CHARACTERS = IDENTIFIER_START_CHARACTERS + "".join(
+    chr(cp)
+    for cp in range(0x10FFFF)
+    if unicodedata.category(chr(cp)) in ("Mn", "Mc", "Nd", "Pc")
+)
 
 # References:
 #   ASM386 Assembly Language Reference, document number 469165-003, https://mirror.math.princeton.edu/pub/oldlinux/Linux.old/Ref-docs/asm-ref.pdf.
@@ -215,8 +230,8 @@ class ParserX86Intel(ParserX86):
 
         # Identifier.  Note that $ is not mentioned in the ASM386 Assembly Language Reference,
         # but it is mentioned in the MASM syntax.  < and > apparently show up in C++ mangled names.
-        first = pp.Word(pp.alphas + "$?@_<>", exact=1)
-        rest = pp.Word(pp.alphanums + "$?@_<>")
+        first = pp.Word(IDENTIFIER_START_CHARACTERS + "$?@_<>", exact=1)
+        rest = pp.Word(IDENTIFIER_CONTINUE_CHARACTERS + "$?@_<>")
         identifier = pp.Group(
             pp.Combine(first + pp.Optional(rest)).setResultsName("name")
         ).setResultsName("identifier")
