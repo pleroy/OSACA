@@ -34,47 +34,6 @@ def reduce_to_section(kernel, parser):
     return kernel[start:end]
 
 
-def get_marker(isa, syntax, comment=""):
-    """Return tuple of start and end marker lines."""
-    isa = isa.lower()
-    if isa == "x86":
-        if syntax == "ATT":
-            start_marker_raw = (
-                "movl      $111, %ebx # OSACA START MARKER\n"
-                ".byte     100        # OSACA START MARKER\n"
-                ".byte     103        # OSACA START MARKER\n"
-                ".byte     144        # OSACA START MARKER\n"
-            )
-            if comment:
-                start_marker_raw += "# {}\n".format(comment)
-            end_marker_raw = (
-                "movl      $222, %ebx # OSACA END MARKER\n"
-                ".byte     100        # OSACA END MARKER\n"
-                ".byte     103        # OSACA END MARKER\n"
-                ".byte     144        # OSACA END MARKER\n"
-            )
-        elif syntax == "INTEL":
-            raise NotImplementedError
-    elif isa == "aarch64":
-        start_marker_raw = (
-            "mov       x1, #111    // OSACA START MARKER\n"
-            ".byte     213,3,32,31 // OSACA START MARKER\n"
-        )
-        if comment:
-            start_marker_raw += "// {}\n".format(comment)
-        # After loop
-        end_marker_raw = (
-            "mov       x1, #222    // OSACA END MARKER\n"
-            ".byte     213,3,32,31 // OSACA END MARKER\n"
-        )
-
-    parser = get_parser(isa, syntax)
-    start_marker = parser.parse_file(start_marker_raw)
-    end_marker = parser.parse_file(end_marker_raw)
-
-    return start_marker, end_marker
-
-
 def find_marked_section(lines, parser, comments=None):
     """
     Return indexes of marked section
@@ -86,7 +45,6 @@ def find_marked_section(lines, parser, comments=None):
     :type comments: dict, optional
     :returns: `tuple of int` -- start and end line of marked section
     """
-    # TODO match to instructions returned by get_marker
     index_start = -1
     index_end = -1
     start_marker = parser.start_marker()
@@ -114,7 +72,7 @@ def find_marked_section(lines, parser, comments=None):
 
 
 # This function and the following ones traverse the syntactic tree produced by the parser and try to
-# match it to the marker.  This is necessary because the IACA marker are significantly different on
+# match it to the marker.  This is necessary because the IACA markers are significantly different on
 # MSVC x86 than on other ISA/compilers.  Therefore, simple string matching is not sufficient.  Also,
 # the syntax of numeric literals depends on the parser and should not be known to this class.
 # The matching only checks for a limited number of properties (and the marker doesn't specify the
