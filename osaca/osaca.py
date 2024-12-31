@@ -116,7 +116,7 @@ def create_parser(parser=None):
         "--syntax",
         type=str,
         help="Define the assembly syntax (ATT, Intel) for x86. If no syntax is given, OSACA "
-        "assumes that the ATT syntax is used.",
+        "tries to determine automatically the syntax to use.",
     )
     parser.add_argument(
         "--fixed",
@@ -248,7 +248,7 @@ def check_arguments(args, parser):
         )
     if args.syntax and args.syntax.upper() not in SUPPORTED_SYNTAXES:
         parser.error(
-            "Assembly syntax not supported. Please see --help for all valid assembly syntaxs."
+            "Assembly syntax not supported. Please see --help for all valid assembly syntaxes."
         )
     if "import_data" in args and args.import_data not in supported_import_files:
         parser.error(
