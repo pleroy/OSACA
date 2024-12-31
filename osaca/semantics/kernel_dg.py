@@ -412,7 +412,7 @@ class KernelDG(nx.DiGraph):
             addr_change = 0
             if isinstance(src.offset, ImmediateOperand) and src.offset.value is not None:
                 addr_change += src.offset.value
-            if mem.offset:
+            if isinstance(mem.offset, ImmediateOperand) and mem.offset.value is not None:
                 addr_change -= mem.offset.value
             if mem.base and src.base:
                 base_change = register_changes.get(
@@ -523,8 +523,8 @@ class KernelDG(nx.DiGraph):
         for dep in lcd:
             lcd_line_numbers[dep] = [x.line_number for x, lat in lcd[dep]["dependencies"]]
         # add color scheme
-        graph.graph["node"] = {"colorscheme": "accent8"}
-        graph.graph["edge"] = {"colorscheme": "accent8"}
+        graph.graph["node"] = {"colorscheme": "set312"}
+        graph.graph["edge"] = {"colorscheme": "set312"}
 
         # create LCD edges
         for dep in lcd_line_numbers:
@@ -555,7 +555,7 @@ class KernelDG(nx.DiGraph):
                         graph.nodes[n]["style"] = "filled"
                     else:
                         graph.nodes[n]["style"] += ",filled"
-                    graph.nodes[n]["fillcolor"] = 2 + col
+                    graph.nodes[n]["fillcolor"] = 2 + col % 11
 
         # color edges
         for e in graph.edges:

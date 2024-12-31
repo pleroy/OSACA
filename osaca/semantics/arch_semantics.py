@@ -421,7 +421,6 @@ class ArchSemantics(ISASemantics):
 
     def convert_op_to_reg(self, reg_type, regtype="0"):
         """Create register operand for a memory addressing operand"""
-        # TODO: Intel
         if self._parser.isa() == "x86":
             if reg_type == "gpr":
                 register = RegisterOperand(name="r" + str(int(regtype) + 9))
