@@ -16,7 +16,9 @@ from osaca.parser.register import RegisterOperand
 from osaca.semantics.hw_model import MachineModel
 
 # Unicode 3.0-style definition because we do not have the UCD in the Python standard library, see
-# the derivation in Table 2 of UAX #31.
+# the derivation in Table 2 of UAX #31, https://www.unicode.org/reports/tr31/#Table_Lexical_Classes_for_Identifiers.
+# See also Table 5-7 in https://www.unicode.org/versions/Unicode3.0.0/ch05.pdf#page=31, and
+# https://www.unicode.org/reports/tr55/#Evolution-Unicode-3.
 IDENTIFIER_START_CHARACTERS = "".join(
     chr(cp)
     for cp in range(0x10FFFF)
