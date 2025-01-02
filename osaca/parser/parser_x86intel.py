@@ -144,6 +144,11 @@ class ParserX86Intel(ParserX86):
             has_single_destination_at_end = len(instruction_form.operands) > 1
 
         if has_single_destination_at_end:
+            # It is important to reverse the operands, we cannot just move the
+            # first one last.  This makes a difference for instructions with 3
+            # operands or more, such as roundsd: the model files expect the
+            # rounding mode (an immediate) first but the Intel syntax has it
+            # last.
             instruction_form.operands.reverse()
 
         # A hack to help with comparison instruction: if the instruction is in the model, and has
