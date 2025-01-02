@@ -23,12 +23,18 @@ IDENTIFIER_START_CHARACTERS = "".join(
     chr(cp)
     for cp in range(0x10FFFF)
     if unicodedata.category(chr(cp)).startswith("L") or unicodedata.category(chr(cp)) == "Nl"
-)
+) + "∂𝛛𝜕𝝏𝞉𝟃∇𝛁𝛻𝜵𝝯𝞩∞"
 
 IDENTIFIER_CONTINUE_CHARACTERS = IDENTIFIER_START_CHARACTERS + "".join(
     chr(cp)
     for cp in range(0x10FFFF)
     if unicodedata.category(chr(cp)) in ("Mn", "Mc", "Nd", "Pc")
+) + "⁽₍⁾₎⁺₊⁼₌⁻₋⁰₀¹₁²₂³₃⁴₄⁵₅⁶₆⁷₇⁸₈⁹₉"
+
+PRINTABLE_CHARACTERS = "".join(
+    chr(cp)
+    for cp in range(0x10FFFF)
+    if unicodedata.category(chr(cp)) not in ("Cc", "Co", "Cn", "Cs")
 )
 
 # References:
@@ -206,7 +212,7 @@ class ParserX86Intel(ParserX86):
 
         # Comment.
         self.comment = pp.Literal(";") + pp.Group(
-            pp.ZeroOrMore(pp.Word(pp.printables))
+            pp.ZeroOrMore(pp.Word(PRINTABLE_CHARACTERS))
         ).setResultsName(self.comment_id)
 
         # Types.
@@ -451,7 +457,7 @@ class ParserX86Intel(ParserX86):
         directive_parameter = (
             pp.quotedString
             ^ (
-                pp.Word(pp.printables, excludeChars=",;")
+                pp.Word(PRINTABLE_CHARACTERS, excludeChars=",;")
                 + pp.Optional(pp.Suppress(pp.Literal(",")))
             )
             ^ pp.Suppress(pp.Literal(","))
