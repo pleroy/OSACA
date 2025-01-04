@@ -357,6 +357,7 @@ def inspect(args, output_file=sys.stdout):
 
     # Parse file.
     while True:
+        arch, syntax = combinations_to_try.pop()
         parser = get_asm_parser(arch, syntax)
         try:
             parsed_code = parser.parse_file(code)
@@ -366,7 +367,6 @@ def inspect(args, output_file=sys.stdout):
             if not combinations_to_try:
                 raise e
         combinations_to_try -= {(arch, syntax)}
-        arch, syntax = combinations_to_try.pop();
 
     # Reduce to marked kernel or chosen section and add semantics
     if args.lines:
