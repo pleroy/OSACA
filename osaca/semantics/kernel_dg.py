@@ -80,7 +80,7 @@ class KernelDG(nx.DiGraph):
                     instruction_form.line_number,
                     latency=instruction_form.latency - instruction_form.latency_wo_load,
                 )
-            for dep, dep_flags in self.find_depending(
+            for dep, operand, dep_flags in self.find_depending(
                 instruction_form, kernel[i + 1 :], flag_dependencies
             ):
                 # print(instruction_form.line_number,"\t",dep.line_number,"\n")
@@ -97,6 +97,7 @@ class KernelDG(nx.DiGraph):
                     instruction_form.line_number,
                     dep.line_number,
                     latency=edge_weight,
+                    operand=operand
                 )
 
                 dg.nodes[dep.line_number]["instruction_form"] = dep
@@ -179,11 +180,14 @@ class KernelDG(nx.DiGraph):
 
         paths_set = set()
         for path in all_paths:
+            loop_carrying_operand = None
             lat_sum = 0.0
             # extend path by edge bound latencies (e.g., store-to-load latency)
             lat_path = []
             for s, d in nx.utils.pairwise(path):
                 edge_lat = dg.edges[s, d]["latency"]
+                if s <= offset and d > offset and "operand" in dg.edges[s, d]:
+                    loop_carrying_operand = dg.edges[s, d]["operand"]
                 # map source node back to original line numbers
                 if s > offset:
                     s -= offset
@@ -198,12 +202,12 @@ class KernelDG(nx.DiGraph):
                 continue
             paths_set.add(tuple(lat_path))
 
-            loopcarried_deps.append((lat_sum, lat_path))
+            loopcarried_deps.append((lat_sum, lat_path, loop_carrying_operand))
         loopcarried_deps.sort(reverse=True)
 
         # map lcd back to nodes
         loopcarried_deps_dict = {}
-        for lat_sum, involved_lines in loopcarried_deps:
+        for lat_sum, involved_lines, loop_carrying_operand in loopcarried_deps:
             dict_key = "-".join([str(il[0]) for il in involved_lines])
             loopcarried_deps_dict[dict_key] = {
                 "root": self._get_node_by_lineno(involved_lines[0][0]),
@@ -211,6 +215,7 @@ class KernelDG(nx.DiGraph):
                     (self._get_node_by_lineno(ln), lat) for ln, lat in involved_lines
                 ],
                 "latency": lat_sum,
+                "operand": loop_carrying_operand
             }
         return loopcarried_deps_dict
 
@@ -269,7 +274,8 @@ class KernelDG(nx.DiGraph):
         :param flag_dependencies: indicating if dependencies of flags should be considered,
                                   defaults to `False`
         :type flag_dependencies: boolean, optional
-        :returns: iterator if all directly dependent instruction forms and according flags
+        :returns: iterator of tuples (directly dependent instruction form, operand creating the
+                  dependency, properties of the dependency)
         """
         if instruction_form.semantic_operands is None:
             return
@@ -292,16 +298,16 @@ class KernelDG(nx.DiGraph):
                             or dst.post_indexed
                             or (isinstance(dst.post_indexed, dict))
                         ):
-                            yield instr_form, ["p_indexed"]
+                            yield instr_form, dst, ["p_indexed"]
                         else:
-                            yield instr_form, []
+                            yield instr_form, dst, []
                     # write to register -> abort
                     if self.is_written(dst, instr_form):
                         break
                 if isinstance(dst, FlagOperand) and flag_dependencies:
                     # read of flag
                     if self.is_read(dst, instr_form):
-                        yield instr_form, []
+                        yield instr_form, dst, []
                     # write to flag -> abort
                     if self.is_written(dst, instr_form):
                         break
@@ -325,7 +331,7 @@ class KernelDG(nx.DiGraph):
                     #      and pass to is_memload and is_memstore to consider relevance.
                     # load from same location (presumed)
                     if self.is_memload(dst, instr_form, register_changes):
-                        yield instr_form, ["storeload_dep"]
+                        yield instr_form, dst, ["storeload_dep"]
                     # store to same location (presumed)
                     if self.is_memstore(dst, instr_form, register_changes):
                         break
@@ -531,6 +537,7 @@ class KernelDG(nx.DiGraph):
             graph.edges[min_line_number, max_line_number]["latency"] = [
                 lat for x, lat in lcd[dep]["dependencies"] if x.line_number == max_line_number
             ]
+            graph.edges[min_line_number, max_line_number]["operand"] = lcd[dep]["operand"]
 
         # add label to edges
         for e in graph.edges:
@@ -614,7 +621,28 @@ class KernelDG(nx.DiGraph):
             edge = graph.edges[u, v] if (u, v) in graph.edges else graph.edges[v, u]
             edge["color"] = color
 
+        for n, node in graph.nodes.items():
+            node["tooltip"] = self._get_node_by_lineno(int(n)).line
+        for edge in graph.edges.values():
+            if "operand" in edge:
+                operand = edge["operand"]
+                tooltip = None
+                if isinstance(operand, RegisterOperand) or isinstance(operand, FlagOperand):
+                    tooltip = operand.name
+                elif isinstance(operand, MemoryOperand):
+                    tooltip = "(memory)"
+                if tooltip:
+                    edge["tooltip"] = tooltip
+                    edge["labeltooltip"] = tooltip
         # rename node from [idx] to [idx mnemonic] and add shape
+        comments = [
+            n for n, node in graph.nodes.items()
+            if node["instruction_form"].comment is not None
+                and not node["instruction_form"].mnemonic
+                and not node["instruction_form"].label
+                and not node["instruction_form"].directive
+        ]
+        graph.remove_nodes_from(comments)
         mapping = {}
         for n in graph.nodes:
             if int(n) != n:
@@ -628,7 +656,6 @@ class KernelDG(nx.DiGraph):
                 else:
                     label = "label" if node.label is not None else None
                     label = "directive" if node.directive is not None else label
-                    label = "comment" if node.comment is not None and label is None else label
                     mapping[n] = "{}: {}".format(n, label)
                     graph.nodes[n]["fontname"] = "italic"
                     graph.nodes[n]["fontsize"] = 11.0
