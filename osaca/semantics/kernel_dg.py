@@ -630,7 +630,7 @@ class KernelDG(nx.DiGraph):
                 if isinstance(operand, RegisterOperand) or isinstance(operand, FlagOperand):
                     tooltip = operand.name
                 elif isinstance(operand, MemoryOperand):
-                    tooltip = f"{operand.base}+{operand.index}*{operand.scale}+{operand.offset}"
+                    tooltip = "(memory)"
                 if tooltip:
                     edge["tooltip"] = tooltip
                     edge["labeltooltip"] = tooltip
