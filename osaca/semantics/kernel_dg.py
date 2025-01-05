@@ -84,9 +84,8 @@ class KernelDG(nx.DiGraph):
         :type flag_dependencies: boolean, optional
         :returns: :class:`~nx.DiGraph` -- directed graph object
         """
-        # 1. go through kernel instruction forms and add them as node attribute
-        # 2. find edges (to dependend further instruction)
-        # 3. get LT value and set as edge weight
+        # Go through kernel instruction forms and add them as nodes of the graph.  Create a LOAD
+        # node for instructions that include a memory reference.
         dg = nx.DiGraph()
         loads = {}
         for i, instruction_form in enumerate(kernel):
@@ -112,11 +111,14 @@ class KernelDG(nx.DiGraph):
                     instruction_form.line_number,
                     latency=instruction_form.latency - instruction_form.latency_wo_load,
                 )
-        #TODO comments
+
+        # 1. find edges (to dependend further instruction)
+        # 2. get LT value and set as edge weight
         for i, instruction_form in enumerate(kernel):
             for dep, operand, dep_flags in self.find_depending(
                 instruction_form, kernel[i + 1 :], flag_dependencies
             ):
+                # print(instruction_form.line_number,"\t",dep.line_number,"\n")
                 edge_weight = (
                     instruction_form.latency
                     if "mem_dep" in dep_flags or instruction_form.latency_wo_load is None
