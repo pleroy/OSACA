@@ -1,4 +1,4 @@
-; Translated from kernal_x86_memdep.s
+; Translated from kernel_x86_memdep.s
 L4:
   vmovsd [rax+8], xmm0
   add rax, 8
@@ -14,3 +14,6 @@ L4:
   add rax, 8
   cmp rsi, rax
   jne L4
+; Added to test LOAD dependencies
+  shl rax, 5
+  subsd xmm10, QWORD PTR [rax+r8]
