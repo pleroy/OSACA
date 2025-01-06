@@ -182,6 +182,41 @@ instruction_forms:
           name: "xmm"
           source: true
           destination: true
+    - name: movsd
+      operands:
+        - class: "register"
+          name: "xmm"
+          source: true
+          destination: false
+        - class: "memory"
+          base: "*"
+          offset: "*"
+          index: "*"
+          scale: "*"
+          source: false
+          destination: true
+    - name: movsd
+      operands:
+        - class: "register"
+          name: "xmm"
+          source: true
+          destination: false
+        - class: "register"
+          name: "xmm"
+          source: true
+          destination: true
+    - name: roundsd
+      operands:
+        - class: immediate
+          imd: int
+        - class: "register"
+          name: "xmm"
+          source: true
+          destination: false
+        - class: "register"
+          name: "xmm"
+          source: true
+          destination: true
     - name: addsd
       operands:
         - class: "register"
