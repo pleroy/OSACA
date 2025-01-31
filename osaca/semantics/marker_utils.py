@@ -12,6 +12,10 @@ from osaca.parser.register import RegisterOperand
 
 COMMENT_MARKER = {"start": "OSACA-BEGIN", "end": "OSACA-END"}
 
+# State of marker matching.  
+#   No: we have determined that the code doesn't match the marker.
+#   Partial: so far the code matches the marker, but we have not reached the end of the marker yet.
+#   Full: the code matches all instructions in the marker.
 class Matching(Enum):
     No = 0
     Partial = 1
@@ -117,7 +121,7 @@ def match_line(parser, line, marker_line):
     Returns whether `line` matches `marker_line`.
 
     :param `IntructionForm` line: parsed assembly code.
-    :param marker_line `InstructioForm` marker: pattern to match against `line`.
+    :param marker_line `InstructionForm` marker: pattern to match against `line`.
     :return: Matching. In case of partial match, `marker_line` is modified and should be reused for
                        matching the next line in the parsed assembly code.
     """
