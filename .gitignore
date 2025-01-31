@@ -109,7 +109,3 @@ venv.bak/
 
 # mypy
 .mypy_cache/
-
-# Visual Studio
-.vs
-x64/
