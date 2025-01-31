@@ -7,7 +7,7 @@
 #endif
 #endif
 
-#define USE_IACA 1
+#define USE_IACA 0
 
 #if USE_IACA
 #include "intel\iacaMarks.h"
