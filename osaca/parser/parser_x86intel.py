@@ -200,7 +200,7 @@ class ParserX86Intel(ParserX86):
         ).setResultsName("value")
 
         # Comment.
-        self.comment = pp.Literal(";") + pp.Group(
+        self.comment = pp.Word(";#", exact=1) + pp.Group(
             pp.ZeroOrMore(pp.Word(pp.printables + NON_ASCII_PRINTABLE_CHARACTERS))
         ).setResultsName(self.comment_id)
 
@@ -227,8 +227,9 @@ class ParserX86Intel(ParserX86):
 
         # Identifier.  Note that $ is not mentioned in the ASM386 Assembly Language Reference,
         # but it is mentioned in the MASM syntax.  < and > apparently show up in C++ mangled names.
-        first = pp.Word(pp.alphas + NON_ASCII_PRINTABLE_CHARACTERS + "$?@_<>", exact=1)
-        rest = pp.Word(pp.alphanums + NON_ASCII_PRINTABLE_CHARACTERS + "$?@_<>")
+        # ICC allows ".", at least in labels.
+        first = pp.Word(pp.alphas + NON_ASCII_PRINTABLE_CHARACTERS + ".$?@_<>", exact=1)
+        rest = pp.Word(pp.alphanums + NON_ASCII_PRINTABLE_CHARACTERS + ".$?@_<>")
         identifier = pp.Group(
             pp.Combine(first + pp.Optional(rest)).setResultsName("name")
         ).setResultsName("identifier")
@@ -342,15 +343,18 @@ class ParserX86Intel(ParserX86):
             | fpu_register
             | simd_register
             | segment_register
+            | pp.CaselessKeyword("RIP")
         ).setResultsName(self.register_id)
 
         # Register expressions.
         base_register = self.register
         index_register = self.register
         scale = pp.Word("1248", exact=1)
-        displacement = pp.Group(
+        post_displacement = pp.Group(
             (pp.Literal("+") ^ pp.Literal("-")).setResultsName("sign")
             + integer_number | identifier
+        ).setResultsName(self.immediate_id)
+        pre_displacement = pp.Group(integer_number + pp.Literal("+")
         ).setResultsName(self.immediate_id)
         indexed = pp.Group(
             index_register.setResultsName("index")
@@ -359,6 +363,7 @@ class ParserX86Intel(ParserX86):
         ).setResultsName("indexed")
         register_expression = pp.Group(
             pp.Literal("[")
+            + pp.Optional(pp.Group(pre_displacement).setResultsName("pre_displacement"))
             + pp.Group(
                 base_register.setResultsName("base")
                 ^ pp.Group(
@@ -366,8 +371,8 @@ class ParserX86Intel(ParserX86):
                     + pp.Literal("+")
                     + indexed).setResultsName("base_and_indexed")
                 ^ indexed
-               ).setResultsName("pre_displacement")
-            + pp.Optional(pp.Group(displacement).setResultsName("displacement"))
+               ).setResultsName("non_displacement")
+            + pp.Optional(pp.Group(post_displacement).setResultsName("post_displacement"))
             + pp.Literal("]")
         ).setResultsName("register_expression")
 
@@ -438,9 +443,18 @@ class ParserX86Intel(ParserX86):
             identifier.setResultsName("name")
             + pp.Literal(":")
             + pp.Optional(self.instruction_parser)
+            + pp.Optional(self.comment)
         ).setResultsName(self.label_id)
 
         # Directives.
+        # The identifiers at the beginnig of a directive cannot start with a "." otherwise we end up
+        # with ambiguities.
+        directive_first = pp.Word(pp.alphas + NON_ASCII_PRINTABLE_CHARACTERS + "$?@_<>", exact=1)
+        directive_rest = pp.Word(pp.alphanums + NON_ASCII_PRINTABLE_CHARACTERS + ".$?@_<>")
+        directive_identifier = pp.Group(
+            pp.Combine(directive_first + pp.Optional(directive_rest)).setResultsName("name")
+        ).setResultsName("identifier")
+
         # Parameter can be any quoted string or sequence of characters besides ';' (for comments)
         # or ',' (parameter delimiter).  See ASM386 p. 38.
         directive_parameter = (
@@ -517,7 +531,7 @@ class ParserX86Intel(ParserX86):
             #| pp.CaselessKeyword("YMMWORD")
         )
         self.directive = pp.Group(
-            pp.Optional(~directive_keywords + identifier)
+            pp.Optional(~directive_keywords + directive_identifier)
             + (
                 pp.Combine(pp.Literal(".") + pp.Word(pp.alphanums + "_"))
                 | pp.Literal("=")
@@ -666,26 +680,33 @@ class ParserX86Intel(ParserX86):
         return RegisterOperand(name=operand.name)
 
     def process_register_expression(self, register_expression):
-        displacement = register_expression.get("displacement")
         pre_displacement = register_expression.get("pre_displacement")
+        post_displacement = register_expression.get("post_displacement")
+        non_displacement = register_expression.get("non_displacement")
         base = None
         indexed = None
-        if pre_displacement:
-            base_and_indexed = pre_displacement.get("base_and_indexed")
+        if non_displacement:
+            base_and_indexed = non_displacement.get("base_and_indexed")
             if base_and_indexed:
                 base = base_and_indexed.get("base")
                 indexed = base_and_indexed.get("indexed")
             else:
-                base = pre_displacement.get("base")
+                base = non_displacement.get("base")
                 if not base:
-                    indexed = pre_displacement.get("indexed")
+                    indexed = non_displacement.get("indexed")
         if indexed:
             index = indexed.get("index")
             scale = int(indexed.get("scale", "1"), 0)
         else:
             index = None
             scale = 1
-        displacement_op = self.process_immediate(displacement.immediate) if displacement else None
+        displacement_op = (
+            self.process_immediate(pre_displacement.immediate) if pre_displacement else None
+        )
+        displacement_op = (
+            self.process_immediate(post_displacement.immediate)
+            if post_displacement else displacement_op
+        )
         base_op = RegisterOperand(name=base.name) if base else None
         index_op = RegisterOperand(name=index.name) if index else None
         new_memory = MemoryOperand(offset=displacement_op, base=base_op, index=index_op, scale=scale)
@@ -764,7 +785,8 @@ class ParserX86Intel(ParserX86):
 
     def process_label(self, label):
         """Post-process label asm line"""
-        # Remove duplicated 'name' level due to identifier.
+        # Remove duplicated 'name' level due to identifier.  Note that there is no place to put the
+        # comment, if any.
         label["name"] = label["name"]["name"]
         return (LabelOperand(name=label.name),
                 self.make_instruction(label) if "mnemonic" in label else None)
