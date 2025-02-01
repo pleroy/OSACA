@@ -314,10 +314,10 @@ class ParserX86ATT(ParserX86):
         if result is None:
             try:
                 result = self.parse_instruction(line)
-            except pp.ParseException:
+            except pp.ParseException as e:
                 raise ValueError(
                     "Could not parse instruction on line {}: {!r}".format(line_number, line)
-                )
+                ) from e
             instruction_form.mnemonic = result.mnemonic
             instruction_form.operands = result.operands
             instruction_form.comment = result.comment
