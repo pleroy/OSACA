@@ -374,7 +374,8 @@ def inspect(args, output_file=sys.stdout):
             # Either the wrong parser based on heuristic, or a bona fide syntax error (or
             # unsupported syntax).  For ease of debugging, we emit the entire exception trace if
             # we tried a single arch/syntax combination.  If we tried multiple combinations, we
-            # don't emit the traceback as it could output a lot of garbage.
+            # don't emit the traceback as it would apply to the latest combination tried, which is
+            # probably the less interesting.
             if not combinations_to_try:
                 raise SyntaxError(message) from e if single_combination else None
 
