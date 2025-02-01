@@ -47,10 +47,10 @@ DEFAULT_ARCHS = {
     "aarch64": "V2",
     "x86": "SPR",
 }
-SUPPORTED_SYNTAXES = {
+SUPPORTED_SYNTAXES = [
     "ATT",
     "INTEL",
-}
+]
 
 
 # Stolen from pip
@@ -329,33 +329,40 @@ def inspect(args, output_file=sys.stdout):
 
     # Detect ISA if necessary
     detected_isa, detected_syntax = BaseParser.detect_ISA(code)
-    arch = args.arch if args.arch else DEFAULT_ARCHS[detected_isa]
-    syntax = args.syntax if args.syntax else detected_syntax
-    print_arch_warning = False if args.arch else True
-    isa = MachineModel.get_isa_for_arch(arch)
+    detected_arch = DEFAULT_ARCHS[detected_isa]
+
+    print_arch_warning = not args.arch
     verbose = args.verbose
     ignore_unknown = args.ignore_unknown
 
-    # Determine the combinations that should be tried based on the command line
-    # arguments.
-    combinations_to_try = ({
-        (DEFAULT_ARCHS["x86"], "ATT"),
-        (DEFAULT_ARCHS["x86"], "INTEL"),
-        (DEFAULT_ARCHS["aarch64"], None),
-    } if not args.arch and not args.syntax
-    else {
-        (DEFAULT_ARCHS["x86"], args.syntax.upper()),
-        (DEFAULT_ARCHS["aarch64"], None),
-    } if not args.arch
-    else {
-        (args.arch, "ATT"),
-        (args.arch, "INTEL"),
-    } if MachineModel.get_isa_for_arch(args.arch) == "x86" and not args.syntax
-    else {
-        (args.arch, args.syntax)
-    })
+    # If the arch/syntax is explicitly specified, that's the only thing we'll try.  Otherwise, we'll
+    # look at all the possible archs/syntaxes, but with our detected arch/syntax last in the list,
+    # thus tried first.
+    if args.arch:
+        archs_to_try = [args.arch]
+    else:
+        archs_to_try = list(DEFAULT_ARCHS)
+        archs_to_try.remove(detected_arch)
+        archs_to_try.append(detected_arch)
+    if args.syntax:
+        syntaxes_to_try = [args.syntax]
+    else:
+        syntaxes_to_try = SUPPORTED_SYNTAXES + [None]
+        syntaxes_to_try.remove(detected_syntax)
+        syntaxes_to_try.append(detected_syntax)
+
+    # Filter the cross-product of archs and syntaxes to eliminate the combinations that don't make
+    # sense.
+    combinations_to_try = [
+        (arch, syntax)
+        for arch in archs_to_try
+        for syntax in syntaxes_to_try
+        if (syntax != None) == (MachineModel.get_isa_for_arch(arch) == "x86")
+    ]
 
     # Parse file.
+    message = ""
+    single_combination = len(combinations_to_try) == 1
     while True:
         arch, syntax = combinations_to_try.pop()
         parser = get_asm_parser(arch, syntax)
@@ -363,10 +370,14 @@ def inspect(args, output_file=sys.stdout):
             parsed_code = parser.parse_file(code)
             break
         except Exception as e:
-            # Probably the wrong parser based on heuristic.
+            message += f"\nWith arch {arch} and syntax {syntax} got error: {e}."
+            # Either the wrong parser based on heuristic, or a bona fide syntax error (or
+            # unsupported syntax).  For ease of debugging, we emit the entire exception trace if
+            # we tried a single arch/syntax combination.  If we tried multiple combinations, we
+            # don't emit the traceback as it would apply to the latest combination tried, which is
+            # probably the less interesting.
             if not combinations_to_try:
-                raise e
-        combinations_to_try -= {(arch, syntax)}
+                raise SyntaxError(message) from e if single_combination else None
 
     # Reduce to marked kernel or chosen section and add semantics
     if args.lines:
