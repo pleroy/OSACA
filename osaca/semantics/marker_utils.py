@@ -12,7 +12,7 @@ from osaca.parser.register import RegisterOperand
 
 COMMENT_MARKER = {"start": "OSACA-BEGIN", "end": "OSACA-END"}
 
-# State of marker matching.  
+# State of marker matching.
 #   No: we have determined that the code doesn't match the marker.
 #   Partial: so far the code matches the marker, but we have not reached the end of the marker yet.
 #   Full: the code matches all instructions in the marker.
