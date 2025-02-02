@@ -25,6 +25,8 @@ class TestParserX86Intel(unittest.TestCase):
             self.triad_code = f.read()
         with open(self._find_file("triad_x86_intel_iaca.asm")) as f:
             self.triad_iaca_code = f.read()
+        with open(self._find_file("gs_x86_icc.asm")) as f:
+            self.gs_icc_code = f.read()
 
     ##################
     # Test
@@ -290,6 +292,28 @@ class TestParserX86Intel(unittest.TestCase):
                                          line="END",
                                          line_number=139))
         self.assertEqual(len(parsed), 136)
+
+    def test_parse_file3(self):
+        parsed = self.parser.parse_file(self.gs_icc_code)
+        self.assertEqual(parsed[0].line_number, 1)
+        # Check a few lines to make sure that we produced something reasonable.
+        self.assertEqual(parsed[113],
+                         InstructionForm(mnemonic="vmovsd",
+                                         operands=[RegisterOperand("XMM5"),
+                                                   MemoryOperand(base=RegisterOperand("R11"),
+                                                                 index=RegisterOperand("R10"),
+                                                                 scale=1,
+                                                                 offset=ImmediateOperand(value=16))],
+                                         comment_id="26.19",
+                                         line="        vmovsd    xmm5, QWORD PTR [16+r11+r10]"
+                                              + "                  #26.19",
+                                         line_number=114))
+        self.assertEqual(parsed[226],
+                         InstructionForm(directive_id=DirectiveOperand(name=".long",
+                                                                       parameters=["681509"]),
+                                         line="        .long   681509",
+                                         line_number=227))
+        self.assertEqual(len(parsed), 227)
 
     def test_normalize_imd(self):
         imd_binary = ImmediateOperand(value="1001111B")
