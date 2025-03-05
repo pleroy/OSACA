@@ -647,7 +647,7 @@ class KernelDG(nx.DiGraph):
                         node_colors[n] = color
                 for u, v in zip(path, path[1:] + [path[0]]):
                     if (u, v) not in edge_colors:
-                        # Don’t introduce a color just for an edge.
+                        # Don�t introduce a color just for an edge.
                         if not color:
                             color = colors_used
                         edge_colors[u, v] = color
