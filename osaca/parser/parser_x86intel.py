@@ -353,9 +353,7 @@ class ParserX86Intel(ParserX86):
 
         base = base_register.setResultsName("base")
         displacement = pp.Group(
-            pp.Group(
-                integer_number ^ identifier
-            ).setResultsName(self.immediate_id)
+            pp.Group(integer_number ^ identifier).setResultsName(self.immediate_id)
         ).setResultsName("displacement")
         short_indexed = index_register.setResultsName("index")
         long_indexed = (
@@ -363,11 +361,10 @@ class ParserX86Intel(ParserX86):
             + pp.Literal("*")
             + scale.setResultsName("scale")
         )
-        indexed = pp.Group(
-            short_indexed
-            ^ long_indexed
-        ).setResultsName("indexed")
+        indexed = pp.Group(short_indexed ^ long_indexed).setResultsName("indexed")
         operator = pp.Word("+-", exact=1)
+        operator_index = pp.Word("+-", exact=1).setResultsName("operator_idx")
+        operator_displacement = pp.Word("+-", exact=1).setResultsName("operator_disp")
 
         # Syntax:
         #   `base` always preceedes `indexed`.
@@ -379,16 +376,24 @@ class ParserX86Intel(ParserX86):
             pp.Literal("[")
             + (
                 base
-                ^ (base + operator + displacement)
-                ^ (base + operator + displacement + operator + indexed)
-                ^ (base + operator + indexed)
-                ^ (base + operator + indexed + operator + displacement)
+                ^ (base + operator_displacement + displacement)
+                ^ (base + operator_displacement + displacement + operator_index + indexed)
+                ^ (base + operator_index + indexed)
+                ^ (base + operator_index + indexed + operator_displacement + displacement)
                 ^ (displacement + operator + base)
-                ^ (displacement + operator + base + operator + indexed)
-                ^ (displacement + operator + pp.Group(long_indexed).setResultsName("indexed"))
+                ^ (displacement + operator + base + operator_index + indexed)
+                ^ (
+                    displacement
+                    + operator_index
+                    + pp.Group(long_indexed).setResultsName("indexed")
+                )
                 ^ pp.Group(long_indexed).setResultsName("indexed")
-                ^ (pp.Group(long_indexed).setResultsName("indexed") + operator + displacement)
-               )
+                ^ (
+                    pp.Group(long_indexed).setResultsName("indexed")
+                    + operator_displacement
+                    + displacement
+                )
+            )
             + pp.Literal("]")
         ).setResultsName("register_expression")
 
@@ -405,7 +410,7 @@ class ParserX86Intel(ParserX86):
             self.register.setResultsName("segment") + pp.Literal(":") + immediate
             ^ immediate + register_expression
             ^ register_expression
-            ^ identifier + pp.Optional(pp.Literal("+") + immediate)
+            ^ identifier + pp.Optional(operator + immediate)
         ).setResultsName("address_expression")
 
         offset_expression = pp.Group(
@@ -704,9 +709,11 @@ class ParserX86Intel(ParserX86):
         if indexed:
             index = indexed.get("index")
             scale = int(indexed.get("scale", "1"), 0)
-        displacement_op = (
-            self.process_immediate(displacement.immediate) if displacement else None
-        )
+            if register_expression.get("operator_index") == "-":
+                scale *= -1
+        displacement_op = self.process_immediate(displacement.immediate) if displacement else None
+        if displacement_op and register_expression.get("operator_disp") == "-":
+            displacement_op.value *= -1
         base_op = RegisterOperand(name=base.name) if base else None
         index_op = RegisterOperand(name=index.name) if index else None
         new_memory = MemoryOperand(offset=displacement_op, base=base_op, index=index_op, scale=scale)
@@ -756,6 +763,8 @@ class ParserX86Intel(ParserX86):
             self.process_immediate(offset_expression.displacement)
             if "displacement" in offset_expression else None
         )
+        if displacement and "operator_disp" == "-":
+            displacement.value *= -1
         identifier = self.process_identifier(offset_expression.identifier)
         identifier.offset = displacement
         return MemoryOperand(offset=identifier)
