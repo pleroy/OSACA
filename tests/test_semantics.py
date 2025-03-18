@@ -41,9 +41,9 @@ class TestSemanticTools(unittest.TestCase):
             cls.code_x86_memdep = f.read()
         with open(cls._find_file("kernel_x86_long_LCD.s")) as f:
             cls.code_x86_long_LCD = f.read()
-        with open(cls._find_file("kernel_x86_intel.asm")) as f:
+        with open(cls._find_file("kernel_x86_intel.s")) as f:
             cls.code_x86_intel = f.read()
-        with open(cls._find_file("kernel_x86_intel_memdep.asm")) as f:
+        with open(cls._find_file("kernel_x86_intel_memdep.s")) as f:
             cls.code_x86_intel_memdep = f.read()
         with open(cls._find_file("kernel_aarch64_memdep.s")) as f:
             cls.code_aarch64_memdep = f.read()
@@ -53,41 +53,36 @@ class TestSemanticTools(unittest.TestCase):
             cls.code_AArch64_SVE = f.read()
         with open(cls._find_file("kernel_aarch64_deps.s")) as f:
             cls.code_AArch64_deps = f.read()
+        with open(cls._find_file("mops_aarch64.s")) as f:
+            cls.mops_1_code = f.read()
+        cls.mops_2_code = cls.mops_1_code.replace("//ALT1 ", "")
+
         cls.kernel_x86 = reduce_to_section(
-            cls.parser_x86_att.parse_file(cls.code_x86),
-            cls.parser_x86_att
+            cls.parser_x86_att.parse_file(cls.code_x86), cls.parser_x86_att
         )
         cls.kernel_x86_memdep = reduce_to_section(
-            cls.parser_x86_att.parse_file(cls.code_x86_memdep),
-            cls.parser_x86_att
+            cls.parser_x86_att.parse_file(cls.code_x86_memdep), cls.parser_x86_att
         )
         cls.kernel_x86_long_LCD = reduce_to_section(
-            cls.parser_x86_att.parse_file(cls.code_x86_long_LCD),
-            cls.parser_x86_att
+            cls.parser_x86_att.parse_file(cls.code_x86_long_LCD), cls.parser_x86_att
         )
         cls.kernel_x86_intel = reduce_to_section(
-            cls.parser_x86_intel.parse_file(cls.code_x86_intel),
-            cls.parser_x86_intel
+            cls.parser_x86_intel.parse_file(cls.code_x86_intel), cls.parser_x86_intel
         )
         cls.kernel_x86_intel_memdep = reduce_to_section(
-            cls.parser_x86_intel.parse_file(cls.code_x86_intel_memdep),
-            cls.parser_x86_intel
+            cls.parser_x86_intel.parse_file(cls.code_x86_intel_memdep), cls.parser_x86_intel
         )
         cls.kernel_AArch64 = reduce_to_section(
-            cls.parser_AArch64.parse_file(cls.code_AArch64),
-            cls.parser_AArch64
+            cls.parser_AArch64.parse_file(cls.code_AArch64), cls.parser_AArch64
         )
         cls.kernel_aarch64_memdep = reduce_to_section(
-            cls.parser_AArch64.parse_file(cls.code_aarch64_memdep),
-            cls.parser_AArch64
+            cls.parser_AArch64.parse_file(cls.code_aarch64_memdep), cls.parser_AArch64
         )
         cls.kernel_aarch64_SVE = reduce_to_section(
-            cls.parser_AArch64.parse_file(cls.code_AArch64_SVE),
-            cls.parser_AArch64
+            cls.parser_AArch64.parse_file(cls.code_AArch64_SVE), cls.parser_AArch64
         )
         cls.kernel_aarch64_deps = reduce_to_section(
-            cls.parser_AArch64.parse_file(cls.code_AArch64_deps),
-            cls.parser_AArch64
+            cls.parser_AArch64.parse_file(cls.code_AArch64_deps), cls.parser_AArch64
         )
 
         # set up machine models
@@ -314,11 +309,11 @@ class TestSemanticTools(unittest.TestCase):
 
     def test_src_dst_assignment_x86_intel(self):
         for instruction_form in self.kernel_x86_intel:
-             with self.subTest(instruction_form=instruction_form):
-                 if instruction_form.semantic_operands is not None:
-                     self.assertTrue("source" in instruction_form.semantic_operands)
-                     self.assertTrue("destination" in instruction_form.semantic_operands)
-                     self.assertTrue("src_dst" in instruction_form.semantic_operands)
+            with self.subTest(instruction_form=instruction_form):
+                if instruction_form.semantic_operands is not None:
+                    self.assertTrue("source" in instruction_form.semantic_operands)
+                    self.assertTrue("destination" in instruction_form.semantic_operands)
+                    self.assertTrue("src_dst" in instruction_form.semantic_operands)
 
     def test_src_dst_assignment_AArch64(self):
         for instruction_form in self.kernel_AArch64:
@@ -438,10 +433,7 @@ class TestSemanticTools(unittest.TestCase):
         #     5_______>9
         #
         dg = KernelDG(
-            self.kernel_x86,
-            self.parser_x86_att,
-            self.machine_model_csx,
-            self.semantics_csx
+            self.kernel_x86, self.parser_x86_att, self.machine_model_csx, self.semantics_csx
         )
         self.assertTrue(nx.algorithms.dag.is_directed_acyclic_graph(dg.dg))
         self.assertEqual(len(list(dg.get_dependent_instruction_forms(line_number=3))), 1)
@@ -472,7 +464,7 @@ class TestSemanticTools(unittest.TestCase):
             self.kernel_x86_intel,
             self.parser_x86_intel,
             self.machine_model_csx,
-            self.semantics_csx_intel
+            self.semantics_csx_intel,
         )
         self.assertTrue(nx.algorithms.dag.is_directed_acyclic_graph(dg.dg))
         self.assertEqual(len(list(dg.get_dependent_instruction_forms(line_number=3))), 1)
@@ -561,6 +553,56 @@ class TestSemanticTools(unittest.TestCase):
         )
         # TODO check for correct analysis
 
+    def test_mops_deps_AArch64(self):
+        self.kernel_mops_1 = reduce_to_section(
+            self.parser_AArch64.parse_file(self.mops_1_code), self.parser_AArch64
+        )
+        self.kernel_mops_2 = reduce_to_section(
+            self.parser_AArch64.parse_file(self.mops_2_code), self.parser_AArch64
+        )
+        self.semantics_a64fx.normalize_instruction_forms(self.kernel_mops_1)
+        self.semantics_a64fx.normalize_instruction_forms(self.kernel_mops_2)
+        for i in range(len(self.kernel_mops_1)):
+            self.semantics_a64fx.assign_src_dst(self.kernel_mops_1[i])
+        for i in range(len(self.kernel_mops_2)):
+            self.semantics_a64fx.assign_src_dst(self.kernel_mops_2[i])
+
+        mops_dest = MemoryOperand(
+            offset=None,
+            base=RegisterOperand(prefix="x", name="3"),
+            index=None,
+            scale=1,
+            pre_indexed=True,
+        )
+        mops_src = MemoryOperand(
+            offset=None,
+            base=RegisterOperand(prefix="x", name="1"),
+            index=None,
+            scale=1,
+            pre_indexed=True,
+        )
+        mops_n = RegisterOperand(prefix="x", name="2", pre_indexed=True)
+        mops_x1 = RegisterOperand(prefix="x", name="1")
+        for instruction_form in self.kernel_mops_1[:-1]:
+            with self.subTest(instruction_form=instruction_form):
+                if not instruction_form.line.startswith("//"):
+                    self.assertTrue(mops_dest in instruction_form.semantic_operands["destination"])
+                    self.assertTrue(mops_src in instruction_form.semantic_operands["source"])
+                    self.assertTrue(mops_n in instruction_form.semantic_operands["src_dst"])
+                    self.assertTrue(
+                        mops_dest.base in instruction_form.semantic_operands["src_dst"]
+                    )
+                    self.assertTrue(mops_src.base in instruction_form.semantic_operands["src_dst"])
+        for instruction_form in self.kernel_mops_2[-2:-1]:
+            with self.subTest(instruction_form=instruction_form):
+                if not instruction_form.line.startswith("//"):
+                    self.assertTrue(mops_dest in instruction_form.semantic_operands["destination"])
+                    self.assertTrue(mops_x1 in instruction_form.semantic_operands["source"])
+                    self.assertTrue(mops_n in instruction_form.semantic_operands["src_dst"])
+                    self.assertTrue(
+                        mops_dest.base in instruction_form.semantic_operands["src_dst"]
+                    )
+
     def test_hidden_load(self):
         machine_model_hld = MachineModel(
             path_to_yaml=self._find_file("hidden_load_machine_model.yml")
@@ -589,10 +631,7 @@ class TestSemanticTools(unittest.TestCase):
 
     def test_cyclic_dag(self):
         dg = KernelDG(
-            self.kernel_x86,
-            self.parser_x86_att,
-            self.machine_model_csx,
-            self.semantics_csx
+            self.kernel_x86, self.parser_x86_att, self.machine_model_csx, self.semantics_csx
         )
         dg.dg.add_edge(100, 101, latency=1.0)
         dg.dg.add_edge(101, 102, latency=2.0)
@@ -659,10 +698,7 @@ class TestSemanticTools(unittest.TestCase):
         lcd_id = "8"
         lcd_id2 = "5"
         dg = KernelDG(
-            self.kernel_x86,
-            self.parser_x86_att,
-            self.machine_model_csx,
-            self.semantics_csx
+            self.kernel_x86, self.parser_x86_att, self.machine_model_csx, self.semantics_csx
         )
         lc_deps = dg.get_loopcarried_dependencies()
         # self.assertEqual(len(lc_deps), 2)
@@ -695,7 +731,7 @@ class TestSemanticTools(unittest.TestCase):
             self.kernel_x86_intel,
             self.parser_x86_intel,
             self.machine_model_csx,
-            self.semantics_csx_intel
+            self.semantics_csx_intel,
         )
         lc_deps = dg.get_loopcarried_dependencies()
         # self.assertEqual(len(lc_deps), 2)
@@ -804,14 +840,10 @@ class TestSemanticTools(unittest.TestCase):
         self.semantics_csx_intel.normalize_instruction_form(instr_form_w_c)
         self.semantics_csx_intel.assign_src_dst(instr_form_w_c)
 
-        instr_form_rw_ymm_1 = self.parser_x86_intel.parse_line(
-            "vinsertf128 ymm1, ymm0, xmm1, 1"
-        )
+        instr_form_rw_ymm_1 = self.parser_x86_intel.parse_line("vinsertf128 ymm1, ymm0, xmm1, 1")
         self.semantics_csx_intel.normalize_instruction_form(instr_form_rw_ymm_1)
         self.semantics_csx_intel.assign_src_dst(instr_form_rw_ymm_1)
-        instr_form_rw_ymm_2 = self.parser_x86_intel.parse_line(
-            "vinsertf128 ymm1, ymm1, xmm0, 1"
-        )
+        instr_form_rw_ymm_2 = self.parser_x86_intel.parse_line("vinsertf128 ymm1, ymm1, xmm0, 1")
         self.semantics_csx_intel.normalize_instruction_form(instr_form_rw_ymm_2)
         self.semantics_csx_intel.assign_src_dst(instr_form_rw_ymm_2)
         instr_form_r_ymm = self.parser_x86_intel.parse_line("vmovapd ymm0, ymm1")

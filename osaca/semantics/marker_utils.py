@@ -1,16 +1,15 @@
 #!/usr/bin/env python3
 from collections import OrderedDict
 from enum import Enum
-from functools import partial
 
-from osaca.parser.instruction_form import InstructionForm
-from osaca.parser.directive import DirectiveOperand
+from osaca.parser import get_parser
 from osaca.parser.identifier import IdentifierOperand
 from osaca.parser.immediate import ImmediateOperand
 from osaca.parser.memory import MemoryOperand
 from osaca.parser.register import RegisterOperand
 
 COMMENT_MARKER = {"start": "OSACA-BEGIN", "end": "OSACA-END"}
+
 
 # State of marker matching.
 #   No: we have determined that the code doesn't match the marker.
@@ -116,6 +115,63 @@ def match_lines(parser, lines, marker):
         if not marker_line:
             return matched_lines + 1
 
+
+def get_marker(isa, syntax="ATT", comment=""):
+    """Return tuple of start and end marker lines."""
+    isa = isa.lower()
+    syntax = syntax.lower()
+    if isa == "x86":
+        if syntax == "att":
+            start_marker_raw = (
+                "movl      $111, %ebx # OSACA START MARKER\n"
+                ".byte     100        # OSACA START MARKER\n"
+                ".byte     103        # OSACA START MARKER\n"
+                ".byte     144        # OSACA START MARKER\n"
+            )
+            if comment:
+                start_marker_raw += "# {}\n".format(comment)
+            end_marker_raw = (
+                "movl      $222, %ebx # OSACA END MARKER\n"
+                ".byte     100        # OSACA END MARKER\n"
+                ".byte     103        # OSACA END MARKER\n"
+                ".byte     144        # OSACA END MARKER\n"
+            )
+        else:
+            # Intel syntax
+            start_marker_raw = (
+                "movl      ebx, 111   # OSACA START MARKER\n"
+                ".byte     100        # OSACA START MARKER\n"
+                ".byte     103        # OSACA START MARKER\n"
+                ".byte     144        # OSACA START MARKER\n"
+            )
+            if comment:
+                start_marker_raw += "# {}\n".format(comment)
+            end_marker_raw = (
+                "movl      ebx, 222   # OSACA END MARKER\n"
+                ".byte     100        # OSACA END MARKER\n"
+                ".byte     103        # OSACA END MARKER\n"
+                ".byte     144        # OSACA END MARKER\n"
+            )
+    elif isa == "aarch64":
+        start_marker_raw = (
+            "mov       x1, #111    // OSACA START MARKER\n"
+            ".byte     213,3,32,31 // OSACA START MARKER\n"
+        )
+        if comment:
+            start_marker_raw += "// {}\n".format(comment)
+        # After loop
+        end_marker_raw = (
+            "mov       x1, #222    // OSACA END MARKER\n"
+            ".byte     213,3,32,31 // OSACA END MARKER\n"
+        )
+
+    parser = get_parser(isa)
+    start_marker = parser.parse_file(start_marker_raw)
+    end_marker = parser.parse_file(end_marker_raw)
+
+    return start_marker, end_marker
+
+
 def match_line(parser, line, marker_line):
     """
     Returns whether `line` matches `marker_line`.
@@ -137,18 +193,21 @@ def match_line(parser, line, marker_line):
         and marker_line.directive
         and line.directive.name == marker_line.directive.name
     ):
-        return match_parameters(parser, line.directive.parameters, marker_line.directive.parameters)
+        return match_parameters(
+            parser, line.directive.parameters, marker_line.directive.parameters
+        )
     else:
         return Matching.No
+
 
 def match_operands(line_operands, marker_line_operands):
     if len(line_operands) != len(marker_line_operands):
         return False
     return all(
         match_operand(line_operand, marker_line_operand)
-        for line_operand, marker_line_operand in
-        zip(line_operands, marker_line_operands)
+        for line_operand, marker_line_operand in zip(line_operands, marker_line_operands)
     )
+
 
 def match_operand(line_operand, marker_line_operand):
     if (
@@ -168,9 +227,10 @@ def match_operand(line_operand, marker_line_operand):
         and isinstance(marker_line_operand, MemoryOperand)
         and match_operand(line_operand.base, marker_line_operand.base)
         and match_operand(line_operand.offset, line_operand.offset)
-        ):
+    ):
         return True
     return False
+
 
 def match_parameters(parser, line_parameters, marker_line_parameters):
     """
@@ -181,13 +241,10 @@ def match_parameters(parser, line_parameters, marker_line_parameters):
     :return: Matching. In case of partial match, `marker_line_parameters` is modified and should be
                        reused for matching the next line in the parsed assembly code.
     """
-    line_parameter_count = len(line_parameters)
-    marker_line_parameter_count = len(marker_line_parameters)
-
     # The elements of `marker_line_parameters` are consumed as they are matched.
     for line_parameter in line_parameters:
         if not marker_line_parameters:
-            break;
+            break
         marker_line_parameter = marker_line_parameters[0]
         if not match_parameter(parser, line_parameter, marker_line_parameter):
             return Matching.No
@@ -196,6 +253,7 @@ def match_parameters(parser, line_parameters, marker_line_parameters):
         return Matching.Partial
     else:
         return Matching.Full
+
 
 def match_parameter(parser, line_parameter, marker_line_parameter):
     if line_parameter.lower() == marker_line_parameter.lower():

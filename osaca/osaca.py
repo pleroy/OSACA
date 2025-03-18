@@ -11,7 +11,7 @@ from ruamel.yaml import YAML
 
 from osaca.db_interface import import_benchmark_output, sanity_check
 from osaca.frontend import Frontend
-from osaca.parser import BaseParser, ParserAArch64, ParserX86, ParserX86ATT, ParserX86Intel
+from osaca.parser import BaseParser, ParserAArch64, ParserX86ATT, ParserX86Intel
 from osaca.semantics import (
     INSTR_FLAGS,
     ArchSemantics,
@@ -243,13 +243,13 @@ def check_arguments(args, parser):
             "Microarchitecture not supported. Please see --help for all valid architecture codes."
         )
     if args.syntax and args.arch and MachineModel.get_isa_for_arch(args.arch) != "x86":
-        parser.error(
-            "Syntax can only be explicitly specified for an x86 microarchitecture"
-        )
-    if args.syntax and args.syntax.upper() not in SUPPORTED_SYNTAXES:
-        parser.error(
-            "Assembly syntax not supported. Please see --help for all valid assembly syntaxes."
-        )
+        parser.error("Syntax can only be explicitly specified for an x86 microarchitecture")
+    if args.syntax:
+        args.syntax = args.syntax.upper()
+        if args.syntax not in SUPPORTED_SYNTAXES:
+            parser.error(
+                "Assembly syntax not supported. Please see --help for all valid assembly syntaxes."
+            )
     if "import_data" in args and args.import_data not in supported_import_files:
         parser.error(
             "Microbenchmark not supported for data import. Please see --help for all valid "
@@ -341,7 +341,7 @@ def inspect(args, output_file=sys.stdout):
     if args.arch:
         archs_to_try = [args.arch]
     else:
-        archs_to_try = list(DEFAULT_ARCHS)
+        archs_to_try = list(DEFAULT_ARCHS.values())
         archs_to_try.remove(detected_arch)
         archs_to_try.append(detected_arch)
     if args.syntax:
@@ -357,7 +357,7 @@ def inspect(args, output_file=sys.stdout):
         (arch, syntax)
         for arch in archs_to_try
         for syntax in syntaxes_to_try
-        if (syntax != None) == (MachineModel.get_isa_for_arch(arch) == "x86")
+        if (syntax is not None) == (MachineModel.get_isa_for_arch(arch) == "x86")
     ]
 
     # Parse file.
@@ -462,7 +462,7 @@ def run(args, output_file=sys.stdout):
 
 
 @lru_cache()
-def get_asm_parser(arch, syntax) -> BaseParser:
+def get_asm_parser(arch, syntax="ATT") -> BaseParser:
     """
     Helper function to create the right parser for a specific architecture.
 

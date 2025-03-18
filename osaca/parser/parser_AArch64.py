@@ -13,7 +13,6 @@ from osaca.parser.identifier import IdentifierOperand
 from osaca.parser.immediate import ImmediateOperand
 from osaca.parser.condition import ConditionOperand
 from osaca.parser.prefetch import PrefetchOperand
-from osaca.semantics.hw_model import MachineModel
 
 
 class ParserAArch64(BaseParser):
@@ -35,30 +34,25 @@ class ParserAArch64(BaseParser):
         return [
             InstructionForm(
                 mnemonic="mov",
-                operands=[RegisterOperand(name="1", prefix="x"), ImmediateOperand(value=111)]
+                operands=[RegisterOperand(name="1", prefix="x"), ImmediateOperand(value=111)],
             ),
             InstructionForm(
                 directive_id=DirectiveOperand(name="byte", parameters=["213", "3", "32", "31"])
-            )
+            ),
         ]
 
     def end_marker(self):
         return [
             InstructionForm(
                 mnemonic="mov",
-                operands=[RegisterOperand(name="1", prefix="x"), ImmediateOperand(value=222)]
+                operands=[RegisterOperand(name="1", prefix="x"), ImmediateOperand(value=222)],
             ),
             InstructionForm(
                 directive_id=DirectiveOperand(name="byte", parameters=["213", "3", "32", "31"])
-            )
+            ),
         ]
 
-    def normalize_instruction_form(
-        self,
-        instruction_form,
-        isa_model: MachineModel,
-        arch_model: MachineModel
-    ):
+    def normalize_instruction_form(self, instruction_form, isa_model, arch_model):
         """
         If the instruction doesn't exist in the machine model, normalize it by dropping the shape
         suffix.
@@ -176,16 +170,18 @@ class ParserAArch64(BaseParser):
             + pp.Optional(immediate).setResultsName("shift")
         ).setResultsName(self.immediate_id)
         # Register:
-        # scalar: [XWBHSDQ][0-9]{1,2}  |   vector: [VZ][0-9]{1,2}(\.[12468]{1,2}[BHSD])?
+        # scalar: [XWBHSDQ][0-9]{1,2}!  |   vector: [VZ][0-9]{1,2}(\.[12468]{1,2}[BHSD])?
         #  | predicate: P[0-9]{1,2}(/[ZM])?
         # ignore vector len control ZCR_EL[123] for now
         # define SP, ZR register aliases as regex, due to pyparsing does not support
         # proper lookahead
         alias_r31_sp = pp.Regex("(?P<prefix>[a-zA-Z])?(?P<name>(sp|SP))")
         alias_r31_zr = pp.Regex("(?P<prefix>[a-zA-Z])?(?P<name>(zr|ZR))")
-        scalar = pp.Word("xwbhsdqXWBHSDQ", exact=1).setResultsName("prefix") + pp.Word(
-            pp.nums
-        ).setResultsName("name")
+        scalar = (
+            pp.Word("xwbhsdqXWBHSDQ", exact=1).setResultsName("prefix")
+            + pp.Word(pp.nums).setResultsName("name")
+            + pp.Optional(pp.Literal("!")).setResultsName("pre_indexed")
+        )
         index = pp.Literal("[") + pp.Word(pp.nums).setResultsName("index") + pp.Literal("]")
         vector = (
             pp.oneOf("v z", caseless=True).setResultsName("prefix")
@@ -469,6 +465,7 @@ class ParserAArch64(BaseParser):
             lanes=operand["lanes"] if "lanes" in operand else None,
             index=operand["index"] if "index" in operand else None,
             predication=operand["predication"].lower() if "predication" in operand else None,
+            pre_indexed=True if "pre_indexed" in operand else False,
         )
 
     def process_memory_address(self, memory_address):

@@ -24,9 +24,9 @@ __all__ = [
 ]
 
 
-def get_parser(isa, syntax):
+def get_parser(isa, syntax="ATT"):
     if isa.lower() == "x86":
-        return ParserX86ATT() if syntax == "ATT" else ParserX86Intel()
+        return ParserX86ATT() if syntax.upper() == "ATT" else ParserX86Intel()
     elif isa.lower() == "aarch64":
         return ParserAArch64()
     else:

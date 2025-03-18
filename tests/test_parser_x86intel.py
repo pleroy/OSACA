@@ -6,8 +6,6 @@ Unit tests for x86 Intel assembly parser
 import os
 import unittest
 
-from pyparsing import ParseException
-
 from osaca.parser import ParserX86Intel, InstructionForm
 from osaca.parser.directive import DirectiveOperand
 from osaca.parser.identifier import IdentifierOperand
@@ -21,12 +19,14 @@ class TestParserX86Intel(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         self.parser = ParserX86Intel()
-        with open(self._find_file("triad_x86_intel.asm")) as f:
+        with open(self._find_file("triad_x86_intel.s")) as f:
             self.triad_code = f.read()
-        with open(self._find_file("triad_x86_intel_iaca.asm")) as f:
+        with open(self._find_file("triad_x86_intel_iaca.s")) as f:
             self.triad_iaca_code = f.read()
-        with open(self._find_file("gs_x86_icc.asm")) as f:
+        with open(self._find_file("gs_x86_icc.s")) as f:
             self.gs_icc_code = f.read()
+        with open(self._find_file("gs_x86_gcc.s")) as f:
+            self.gs_gcc_code = f.read()
 
     ##################
     # Test
@@ -45,7 +45,7 @@ class TestParserX86Intel(unittest.TestCase):
         self.assertEqual(self._get_label(self.parser, "$$B1?10:")[0].name, "$$B1?10")
         self.assertEqual(
             self._get_label(self.parser, "$LN9:\tcall\t__CheckForDebuggerJustMyCode")[0].name,
-            "$LN9"
+            "$LN9",
         )
         self.assertEqual(
             self._get_label(self.parser, "$LN9:\tcall\t__CheckForDebuggerJustMyCode")[1],
@@ -59,28 +59,34 @@ class TestParserX86Intel(unittest.TestCase):
                 label_id=None,
                 line=None,
                 line_number=None,
-            )
+            ),
         )
 
     def test_directive_parser(self):
-        self.assertEqual(self._get_directive(self.parser, "\t.allocstack 16")[0],
-                         DirectiveOperand(name=".allocstack",
-                                          parameters=["16"]))
-        self.assertEqual(self._get_directive(self.parser, "INCLUDELIB MSVCRTD")[0],
-                         DirectiveOperand(name="INCLUDELIB",
-                                          parameters=["MSVCRTD"]))
-        self.assertEqual(self._get_directive(self.parser, "msvcjmc\tSEGMENT")[0],
-                         DirectiveOperand(name="SEGMENT",
-                                          parameters=["msvcjmc"]))
-        self.assertEqual(self._get_directive(self.parser, "EXTRN\t_RTC_InitBase:PROC")[0],
-                         DirectiveOperand(name="EXTRN",
-                                          parameters=["_RTC_InitBase:PROC"]))
-        self.assertEqual(self._get_directive(self.parser, "$pdata$kernel DD imagerel $LN9")[0],
-                         DirectiveOperand(name="DD",
-                                          parameters=["$pdata$kernel", "imagerel", "$LN9"]))
-        self.assertEqual(self._get_directive(self.parser, "repeat$ = 320")[0],
-                         DirectiveOperand(name="=",
-                                          parameters=["repeat$", "320"]))
+        self.assertEqual(
+            self._get_directive(self.parser, "\t.allocstack 16")[0],
+            DirectiveOperand(name=".allocstack", parameters=["16"]),
+        )
+        self.assertEqual(
+            self._get_directive(self.parser, "INCLUDELIB MSVCRTD")[0],
+            DirectiveOperand(name="INCLUDELIB", parameters=["MSVCRTD"]),
+        )
+        self.assertEqual(
+            self._get_directive(self.parser, "msvcjmc\tSEGMENT")[0],
+            DirectiveOperand(name="SEGMENT", parameters=["msvcjmc"]),
+        )
+        self.assertEqual(
+            self._get_directive(self.parser, "EXTRN\t_RTC_InitBase:PROC")[0],
+            DirectiveOperand(name="EXTRN", parameters=["_RTC_InitBase:PROC"]),
+        )
+        self.assertEqual(
+            self._get_directive(self.parser, "$pdata$kernel DD imagerel $LN9")[0],
+            DirectiveOperand(name="DD", parameters=["$pdata$kernel", "imagerel", "$LN9"]),
+        )
+        self.assertEqual(
+            self._get_directive(self.parser, "repeat$ = 320")[0],
+            DirectiveOperand(name="=", parameters=["repeat$", "320"]),
+        )
 
     def test_parse_instruction(self):
         instr1 = "\tsub\trsp, 296\t\t\t\t; 00000128H"
@@ -96,6 +102,7 @@ class TestParserX86Intel(unittest.TestCase):
         instr11 = "\tlea\trcx, OFFSET FLAT:??_R0N@8+8"
         instr12 = "\tvfmadd213sd xmm0, xmm1, QWORD PTR __real@bfc5555555555555"
         instr13 = "\tjmp\t$LN18@operator"
+        instr14 = "vaddsd  xmm0, xmm0, QWORD PTR [rdx+8+rax*8]"
 
         parsed_1 = self.parser.parse_instruction(instr1)
         parsed_2 = self.parser.parse_instruction(instr2)
@@ -110,95 +117,109 @@ class TestParserX86Intel(unittest.TestCase):
         parsed_11 = self.parser.parse_instruction(instr11)
         parsed_12 = self.parser.parse_instruction(instr12)
         parsed_13 = self.parser.parse_instruction(instr13)
+        parsed_14 = self.parser.parse_instruction(instr14)
 
         self.assertEqual(parsed_1.mnemonic, "sub")
-        self.assertEqual(parsed_1.operands[0],
-                         RegisterOperand(name="RSP"))
-        self.assertEqual(parsed_1.operands[1],
-                         ImmediateOperand(value=296))
+        self.assertEqual(parsed_1.operands[0], RegisterOperand(name="RSP"))
+        self.assertEqual(parsed_1.operands[1], ImmediateOperand(value=296))
         self.assertEqual(parsed_1.comment, "00000128H")
 
         self.assertEqual(parsed_2.mnemonic, "fst")
-        self.assertEqual(parsed_2.operands[0],
-                         RegisterOperand(name="ST(3)"))
+        self.assertEqual(parsed_2.operands[0], RegisterOperand(name="ST(3)"))
         self.assertEqual(parsed_2.comment, "Good ol' x87.")
 
         self.assertEqual(parsed_3.mnemonic, "mulsd")
-        self.assertEqual(parsed_3.operands[0],
-                         RegisterOperand(name="XMM0"))
-        self.assertEqual(parsed_3.operands[1],
-                         MemoryOperand(base=RegisterOperand(name="RDX"),
-                                       index=RegisterOperand(name="RCX"),
-                                       scale=8))
+        self.assertEqual(parsed_3.operands[0], RegisterOperand(name="XMM0"))
+        self.assertEqual(
+            parsed_3.operands[1],
+            MemoryOperand(
+                base=RegisterOperand(name="RDX"), index=RegisterOperand(name="RCX"), scale=8
+            ),
+        )
 
         self.assertEqual(parsed_4.mnemonic, "mov")
-        self.assertEqual(parsed_4.operands[0],
-                         RegisterOperand(name="EAX"))
-        self.assertEqual(parsed_4.operands[1],
-                         MemoryOperand(offset=ImmediateOperand(
-                                            identifier="cur_elements$",
-                                            value=104
-                                       ),
-                                       base=RegisterOperand(name="RBP")))
-
+        self.assertEqual(parsed_4.operands[0], RegisterOperand(name="EAX"))
+        self.assertEqual(
+            parsed_4.operands[1],
+            MemoryOperand(
+                offset=ImmediateOperand(identifier="cur_elements$", value=104),
+                base=RegisterOperand(name="RBP"),
+            ),
+        )
         self.assertEqual(parsed_5.mnemonic, "mov")
-        self.assertEqual(parsed_5.operands[0],
-                         MemoryOperand(offset=ImmediateOperand(value=24),
-                                       base=RegisterOperand(name="RSP")))
-        self.assertEqual(parsed_5.operands[1],
-                         RegisterOperand(name="R8"))
+        self.assertEqual(
+            parsed_5.operands[0],
+            MemoryOperand(offset=ImmediateOperand(value=24), base=RegisterOperand(name="RSP")),
+        )
+        self.assertEqual(parsed_5.operands[1], RegisterOperand(name="R8"))
 
         self.assertEqual(parsed_6.mnemonic, "jmp")
-        self.assertEqual(parsed_6.operands[0],
-                         LabelOperand(name="$LN2@kernel"))
+        self.assertEqual(parsed_6.operands[0], LabelOperand(name="$LN2@kernel"))
 
         self.assertEqual(parsed_7.mnemonic, "lea")
-        self.assertEqual(parsed_7.operands[0],
-                         RegisterOperand(name="RCX"))
-        self.assertEqual(parsed_7.operands[1],
-                         MemoryOperand(offset=IdentifierOperand(name="__FAC6D534_triad@c")))
+        self.assertEqual(parsed_7.operands[0], RegisterOperand(name="RCX"))
+        self.assertEqual(
+            parsed_7.operands[1],
+            MemoryOperand(offset=IdentifierOperand(name="__FAC6D534_triad@c")),
+        )
 
         self.assertEqual(parsed_8.mnemonic, "mov")
-        self.assertEqual(parsed_8.operands[0],
-                         MemoryOperand(
-                             base=RegisterOperand(name="GS"),
-                             offset=ImmediateOperand(value=111)))
-        self.assertEqual(parsed_8.operands[1],
-                         RegisterOperand(name="AL"))
+        self.assertEqual(
+            parsed_8.operands[0],
+            MemoryOperand(base=RegisterOperand(name="GS"), offset=ImmediateOperand(value=111)),
+        )
+        self.assertEqual(parsed_8.operands[1], RegisterOperand(name="AL"))
 
         self.assertEqual(parsed_9.mnemonic, "lea")
-        self.assertEqual(parsed_9.operands[0],
-                         RegisterOperand(name="R8"))
-        self.assertEqual(parsed_9.operands[1],
-                         MemoryOperand(base=None,
-                                       index=RegisterOperand(name="R8"),
-                                       scale=4))
+        self.assertEqual(parsed_9.operands[0], RegisterOperand(name="R8"))
+        self.assertEqual(
+            parsed_9.operands[1],
+            MemoryOperand(base=None, index=RegisterOperand(name="R8"), scale=4),
+        )
 
         self.assertEqual(parsed_10.mnemonic, "movsd")
-        self.assertEqual(parsed_10.operands[0],
-                         RegisterOperand(name="XMM1"))
-        self.assertEqual(parsed_10.operands[1],
-                         MemoryOperand(offset=IdentifierOperand(name="boost@@XZ@4V456@A",
-                                                                offset=ImmediateOperand(value=16))))
+        self.assertEqual(parsed_10.operands[0], RegisterOperand(name="XMM1"))
+        self.assertEqual(
+            parsed_10.operands[1],
+            MemoryOperand(
+                offset=IdentifierOperand(
+                    name="boost@@XZ@4V456@A", offset=ImmediateOperand(value=16)
+                )
+            ),
+        )
 
         self.assertEqual(parsed_11.mnemonic, "lea")
-        self.assertEqual(parsed_11.operands[0],
-                         RegisterOperand(name="RCX"))
-        self.assertEqual(parsed_11.operands[1],
-                         MemoryOperand(offset=IdentifierOperand(name="??_R0N@8",
-                                                                offset=ImmediateOperand(value=8))))
+        self.assertEqual(parsed_11.operands[0], RegisterOperand(name="RCX"))
+        self.assertEqual(
+            parsed_11.operands[1],
+            MemoryOperand(
+                offset=IdentifierOperand(name="??_R0N@8", offset=ImmediateOperand(value=8))
+            ),
+        )
 
         self.assertEqual(parsed_12.mnemonic, "vfmadd213sd")
-        self.assertEqual(parsed_12.operands[0],
-                         RegisterOperand(name="XMM0"))
-        self.assertEqual(parsed_12.operands[1],
-                         RegisterOperand(name="XMM1"))
-        self.assertEqual(parsed_12.operands[2],
-                         MemoryOperand(offset=IdentifierOperand(name="__real@bfc5555555555555")))
+        self.assertEqual(parsed_12.operands[0], RegisterOperand(name="XMM0"))
+        self.assertEqual(parsed_12.operands[1], RegisterOperand(name="XMM1"))
+        self.assertEqual(
+            parsed_12.operands[2],
+            MemoryOperand(offset=IdentifierOperand(name="__real@bfc5555555555555")),
+        )
 
         self.assertEqual(parsed_13.mnemonic, "jmp")
-        self.assertEqual(parsed_13.operands[0],
-                         IdentifierOperand(name="$LN18@operator"))
+        self.assertEqual(parsed_13.operands[0], IdentifierOperand(name="$LN18@operator"))
+
+        self.assertEqual(parsed_14.mnemonic, "vaddsd")
+        self.assertEqual(parsed_14.operands[0], RegisterOperand(name="XMM0"))
+        self.assertEqual(parsed_14.operands[1], RegisterOperand(name="XMM0"))
+        self.assertEqual(
+            parsed_14.operands[2],
+            MemoryOperand(
+                base=RegisterOperand(name="RDX"),
+                offset=ImmediateOperand(value=8),
+                index=RegisterOperand(name="RAX"),
+                scale=8,
+            ),
+        )
 
     def test_parse_line(self):
         line_comment = "; -- Begin  main"
@@ -252,68 +273,125 @@ class TestParserX86Intel(unittest.TestCase):
         self.assertEqual(parsed[0].line_number, 1)
         # Check specifically that the values of the symbols defined by "=" were correctly
         # propagated.
-        self.assertEqual(parsed[69],
-                         InstructionForm(mnemonic="mov",
-                                         operands=[MemoryOperand(
-                                                        base=RegisterOperand("RBP"),
-                                                        offset=ImmediateOperand(
-                                                            value=4,
-                                                            identifier="r$1"
-                                                        )
-                                                    ),
-                                                   ImmediateOperand(value=0)],
-                                         line="\tmov\tDWORD PTR r$1[rbp], 0",
-                                         line_number=73))
+        self.assertEqual(
+            parsed[69],
+            InstructionForm(
+                mnemonic="mov",
+                operands=[
+                    MemoryOperand(
+                        base=RegisterOperand("RBP"),
+                        offset=ImmediateOperand(value=4, identifier="r$1"),
+                    ),
+                    ImmediateOperand(value=0),
+                ],
+                line="\tmov\tDWORD PTR r$1[rbp], 0",
+                line_number=73,
+            ),
+        )
         # Check a few lines to make sure that we produced something reasonable.
-        self.assertEqual(parsed[60],
-                         InstructionForm(mnemonic="mov",
-                                         operands=[MemoryOperand(base=RegisterOperand("RSP"),
-                                                                 offset=ImmediateOperand(value=8)),
-                                                   RegisterOperand(name="RCX")],
-                                         line="\tmov\tQWORD PTR [rsp+8], rcx",
-                                         line_number=64))
-        self.assertEqual(parsed[120],
-                         InstructionForm(directive_id=DirectiveOperand(name="END"),
-                                         line="END",
-                                         line_number=124))
+        self.assertEqual(
+            parsed[60],
+            InstructionForm(
+                mnemonic="mov",
+                operands=[
+                    MemoryOperand(base=RegisterOperand("RSP"), offset=ImmediateOperand(value=8)),
+                    RegisterOperand(name="RCX"),
+                ],
+                line="\tmov\tQWORD PTR [rsp+8], rcx",
+                line_number=64,
+            ),
+        )
+        self.assertEqual(
+            parsed[120],
+            InstructionForm(
+                directive_id=DirectiveOperand(name="END"), line="END", line_number=124
+            ),
+        )
         self.assertEqual(len(parsed), 121)
 
     def test_parse_file2(self):
         parsed = self.parser.parse_file(self.triad_iaca_code)
         self.assertEqual(parsed[0].line_number, 1)
         # Check a few lines to make sure that we produced something reasonable.
-        self.assertEqual(parsed[68],
-                         InstructionForm(directive_id=DirectiveOperand(name="=",
-                                                                       parameters=["s$", "88"]),
-                                         line="s$ = 88",
-                                         line_number=72))
-        self.assertEqual(parsed[135],
-                         InstructionForm(directive_id=DirectiveOperand(name="END"),
-                                         line="END",
-                                         line_number=139))
+        self.assertEqual(
+            parsed[68],
+            InstructionForm(
+                directive_id=DirectiveOperand(name="=", parameters=["s$", "88"]),
+                line="s$ = 88",
+                line_number=72,
+            ),
+        )
+        self.assertEqual(
+            parsed[135],
+            InstructionForm(
+                directive_id=DirectiveOperand(name="END"), line="END", line_number=139
+            ),
+        )
         self.assertEqual(len(parsed), 136)
 
     def test_parse_file3(self):
         parsed = self.parser.parse_file(self.gs_icc_code)
         self.assertEqual(parsed[0].line_number, 1)
         # Check a few lines to make sure that we produced something reasonable.
-        self.assertEqual(parsed[113],
-                         InstructionForm(mnemonic="vmovsd",
-                                         operands=[RegisterOperand("XMM5"),
-                                                   MemoryOperand(base=RegisterOperand("R11"),
-                                                                 index=RegisterOperand("R10"),
-                                                                 scale=1,
-                                                                 offset=ImmediateOperand(value=16))],
-                                         comment_id="26.19",
-                                         line="        vmovsd    xmm5, QWORD PTR [16+r11+r10]"
-                                              + "                  #26.19",
-                                         line_number=114))
-        self.assertEqual(parsed[226],
-                         InstructionForm(directive_id=DirectiveOperand(name=".long",
-                                                                       parameters=["681509"]),
-                                         line="        .long   681509",
-                                         line_number=227))
+        self.assertEqual(
+            parsed[113],
+            InstructionForm(
+                mnemonic="vmovsd",
+                operands=[
+                    RegisterOperand("XMM5"),
+                    MemoryOperand(
+                        base=RegisterOperand("R11"),
+                        index=RegisterOperand("R10"),
+                        scale=1,
+                        offset=ImmediateOperand(value=16),
+                    ),
+                ],
+                comment_id="26.19",
+                line="        vmovsd    xmm5, QWORD PTR [16+r11+r10]" + "                  #26.19",
+                line_number=114,
+            ),
+        )
+        self.assertEqual(
+            parsed[226],
+            InstructionForm(
+                directive_id=DirectiveOperand(name=".long", parameters=["681509"]),
+                line="        .long   681509",
+                line_number=227,
+            ),
+        )
         self.assertEqual(len(parsed), 227)
+
+    def test_parse_file4(self):
+        parsed = self.parser.parse_file(self.gs_gcc_code)
+        self.assertEqual(parsed[0].line_number, 1)
+        # Check a few lines to make sure that we produced something reasonable.
+        self.assertEqual(
+            parsed[61],
+            InstructionForm(
+                mnemonic="vaddsd",
+                operands=[
+                    RegisterOperand("XMM0"),
+                    RegisterOperand("XMM0"),
+                    MemoryOperand(
+                        base=RegisterOperand("RDX"),
+                        index=RegisterOperand("RAX"),
+                        scale=8,
+                        offset=ImmediateOperand(value=8),
+                    ),
+                ],
+                line="        vaddsd  xmm0, xmm0, QWORD PTR [rdx+8+rax*8]",
+                line_number=62,
+            ),
+        )
+        self.assertEqual(
+            parsed[101],
+            InstructionForm(
+                directive_id=DirectiveOperand(name=".long", parameters=["1072939201"]),
+                line="        .long   1072939201",
+                line_number=102,
+            ),
+        )
+        self.assertEqual(len(parsed), 102)
 
     def test_normalize_imd(self):
         imd_binary = ImmediateOperand(value="1001111B")
@@ -341,9 +419,7 @@ class TestParserX86Intel(unittest.TestCase):
     ##################
     def _get_comment(self, parser, comment):
         return " ".join(
-            parser.process_operand(parser.comment.parseString(comment, parseAll=True))[
-                "comment"
-            ]
+            parser.process_operand(parser.comment.parseString(comment, parseAll=True))["comment"]
         )
 
     def _get_label(self, parser, label):
