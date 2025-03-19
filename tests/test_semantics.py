@@ -565,11 +565,13 @@ class TestSemanticTools(unittest.TestCase):
 
     def test_mops_deps_AArch64(self):
         self.kernel_mops_1 = reduce_to_section(
-            self.parser_AArch64.parse_file(self.mops_1_code), "aarch64"
+            self.parser_AArch64.parse_file(self.mops_1_code), self.parser_AArch64
         )
         self.kernel_mops_2 = reduce_to_section(
-            self.parser_AArch64.parse_file(self.mops_2_code), "aarch64"
+            self.parser_AArch64.parse_file(self.mops_2_code), self.parser_AArch64
         )
+        self.semantics_a64fx.normalize_instruction_forms(self.kernel_mops_1)
+        self.semantics_a64fx.normalize_instruction_forms(self.kernel_mops_2)
         for i in range(len(self.kernel_mops_1)):
             self.semantics_a64fx.assign_src_dst(self.kernel_mops_1[i])
         for i in range(len(self.kernel_mops_2)):
