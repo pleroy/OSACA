@@ -12,13 +12,16 @@ from osaca.parser.label import LabelOperand
 from osaca.parser.memory import MemoryOperand
 from osaca.parser.register import RegisterOperand
 
-# We assume any non-ASCII characters except control characters and line terminators can be part of
-# identifiers; this is based on the assumption that no assembler uses non-ASCII white space and
-# syntax characters.
+## TODO(egg): Switch to allowing all non-ASCII printables, based on the assumption that no assembler
+# will ever use non-ASCII white space and syntax.
 # This approach is described at the end of https://www.unicode.org/reports/tr55/#Whitespace-Syntax.
 # It is appropriate for tools, such as this one, which process source code but do not fully validate
 # it (in this case, that’s the job of the assembler).
-NON_ASCII_PRINTABLE_CHARACTERS = "".join(
+# Unicode 3.0-style definition because we do not have the UCD in the Python standard library, see
+# the derivation in Table 2 of UAX #31, https://www.unicode.org/reports/tr31/#Table_Lexical_Classes_for_Identifiers.
+# See also Table 5-7 in https://www.unicode.org/versions/Unicode3.0.0/ch05.pdf#page=31, and
+# https://www.unicode.org/reports/tr55/#Evolution-Unicode-3.
+IDENTIFIER_START_CHARACTERS = "".join(
     chr(cp)
     for cp in range(0x10FFFF)
     if unicodedata.category(chr(cp)).startswith("L") or unicodedata.category(chr(cp)) == "Nl"
