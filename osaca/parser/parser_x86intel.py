@@ -12,15 +12,15 @@ from osaca.parser.label import LabelOperand
 from osaca.parser.memory import MemoryOperand
 from osaca.parser.register import RegisterOperand
 
-# We assume any non-ASCII printable characters can be part of identifiers; this is based on the
-# assumption that no assembler uses non-ASCII white space and syntax characters.
+# We assume any non-ASCII characters except control characters and line terminators can be part of
+# identifiers; this is based on the assumption that no assembler uses non-ASCII white space and
+# syntax characters.
 # This approach is described at the end of https://www.unicode.org/reports/tr55/#Whitespace-Syntax.
 # It is appropriate for tools, such as this one, which process source code but do not fully validate
 # it (in this case, that’s the job of the assembler).
-PRINTABLE_CHARACTERS = "".join(
-    chr(cp)
-    for cp in range(0x80, 0x10FFFF + 1)
-    if unicodedata.category(chr(cp)) not in ("Cc", "Cs")
+NON_ASCII_PRINTABLE_CHARACTERS = "".join(
+    chr(cp) for cp in range(0x80, 0x10FFFF + 1)
+    if unicodedata.category(chr(cp)) not in ("Cc", "Zl", "Zp", "Cs", "Cn")
 )
 
 # References:
@@ -177,7 +177,7 @@ class ParserX86Intel(ParserX86):
 
         # Comment.
         self.comment = pp.Word(";#", exact=1) + pp.Group(
-            pp.ZeroOrMore(pp.Word(PRINTABLE_CHARACTERS))
+            pp.ZeroOrMore(pp.Word(pp.printables + NON_ASCII_PRINTABLE_CHARACTERS))
         ).setResultsName(self.comment_id)
 
         # Types.
@@ -205,8 +205,8 @@ class ParserX86Intel(ParserX86):
         # Identifier.  Note that $ is not mentioned in the ASM386 Assembly Language Reference,
         # but it is mentioned in the MASM syntax.  < and > apparently show up in C++ mangled names.
         # ICC allows ".", at least in labels.
-        first = pp.Word(pp.alphas + PRINTABLE_CHARACTERS + "$?@_<>", exact=1)
-        rest = pp.Word(pp.alphanums + PRINTABLE_CHARACTERS + "$?@_<>")
+        first = pp.Word(pp.alphas + NON_ASCII_PRINTABLE_CHARACTERS + "$?@_<>", exact=1)
+        rest = pp.Word(pp.alphanums + NON_ASCII_PRINTABLE_CHARACTERS + "$?@_<>")
         identifier = pp.Group(
             pp.Combine(first + pp.Optional(rest)).setResultsName("name")
         ).setResultsName("identifier")
