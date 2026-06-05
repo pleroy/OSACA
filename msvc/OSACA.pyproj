@@ -1,0 +1,89 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{88ef9105-2c58-41fe-ad9f-f54c96a7e8b3}</ProjectGuid>
+    <ProjectHome>..\</ProjectHome>
+    <StartupFile>tests\test_semantics.py</StartupFile>
+    <SearchPath />
+    <WorkingDirectory>.</WorkingDirectory>
+    <OutputPath>.</OutputPath>
+    <ProjectTypeGuids>{888888a0-9f3d-457c-b088-3a5042f75d52}</ProjectTypeGuids>
+    <LaunchProvider>Standard Python launcher</LaunchProvider>
+    <InterpreterId />
+    <TestFramework>Pytest</TestFramework>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'" />
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'" />
+  <PropertyGroup>
+    <VisualStudioVersion Condition=" '$(VisualStudioVersion)' == '' ">10.0</VisualStudioVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <Content Include="docs\img\osaca-logo.png" />
+    <Content Include="docs\img\osaca-workflow.png" />
+    <Content Include="tox.ini" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="docs\conf.py" />
+    <Compile Include="docs\version_from_src.py" />
+    <Compile Include="osaca\data\create_db_entry.py" />
+    <Compile Include="osaca\data\generate_mov_entries.py" />
+    <Compile Include="osaca\data\model_importer.py" />
+    <Compile Include="osaca\data\pmevo_importer.py" />
+    <Compile Include="osaca\data\_build_cache.py" />
+    <Compile Include="osaca\db_interface.py" />
+    <Compile Include="osaca\frontend.py" />
+    <Compile Include="osaca\osaca.py" />
+    <Compile Include="osaca\parser\base_parser.py" />
+    <Compile Include="osaca\parser\condition.py" />
+    <Compile Include="osaca\parser\directive.py" />
+    <Compile Include="osaca\parser\flag.py" />
+    <Compile Include="osaca\parser\identifier.py" />
+    <Compile Include="osaca\parser\immediate.py" />
+    <Compile Include="osaca\parser\instruction_form.py" />
+    <Compile Include="osaca\parser\label.py" />
+    <Compile Include="osaca\parser\memory.py" />
+    <Compile Include="osaca\parser\operand.py" />
+    <Compile Include="osaca\parser\parser_AArch64.py" />
+    <Compile Include="osaca\parser\parser_x86.py" />
+    <Compile Include="osaca\parser\parser_x86att.py" />
+    <Compile Include="osaca\parser\parser_x86intel.py" />
+    <Compile Include="osaca\parser\prefetch.py" />
+    <Compile Include="osaca\parser\register.py" />
+    <Compile Include="osaca\parser\__init__.py" />
+    <Compile Include="osaca\semantics\arch_semantics.py" />
+    <Compile Include="osaca\semantics\hw_model.py" />
+    <Compile Include="osaca\semantics\isa_semantics.py" />
+    <Compile Include="osaca\semantics\kernel_dg.py" />
+    <Compile Include="osaca\semantics\marker_utils.py" />
+    <Compile Include="osaca\semantics\__init__.py" />
+    <Compile Include="osaca\utils.py" />
+    <Compile Include="osaca\__init__.py" />
+    <Compile Include="osaca\__main__.py" />
+    <Compile Include="setup.py" />
+    <Compile Include="tests\all_tests.py" />
+    <Compile Include="tests\test_base_parser.py" />
+    <Compile Include="tests\test_cli.py" />
+    <Compile Include="tests\test_db_interface.py" />
+    <Compile Include="tests\test_frontend.py" />
+    <Compile Include="tests\test_marker_utils.py" />
+    <Compile Include="tests\test_parser_AArch64.py" />
+    <Compile Include="tests\test_parser_x86att.py" />
+    <Compile Include="tests\test_parser_x86intel.py" />
+    <Compile Include="tests\test_semantics.py" />
+    <Compile Include="tests\__init__.py" />
+    <Compile Include="validation\build_and_run.py" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="docs" />
+    <Folder Include="docs\img" />
+    <Folder Include="osaca" />
+    <Folder Include="osaca\data" />
+    <Folder Include="osaca\parser" />
+    <Folder Include="osaca\semantics" />
+    <Folder Include="tests" />
+    <Folder Include="validation" />
+  </ItemGroup>
+  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
+</Project>
