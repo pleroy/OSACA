@@ -20,10 +20,21 @@ from osaca.parser.register import RegisterOperand
 # it (in this case, that’s the job of the assembler).
 NON_ASCII_PRINTABLE_CHARACTERS = "".join(
     chr(cp)
-    for cp in range(0x80, 0x10FFFF + 1)
-    if unicodedata.category(chr(cp)) not in ("Cc", "Zl", "Zp", "Cs", "Cn")
-)
+    for cp in range(0x10FFFF)
+    if unicodedata.category(chr(cp)).startswith("L") or unicodedata.category(chr(cp)) == "Nl"
+) + "∂𝛛𝜕𝝏𝞉𝟃∇𝛁𝛻𝜵𝝯𝞩∞"
 
+IDENTIFIER_CONTINUE_CHARACTERS = IDENTIFIER_START_CHARACTERS + "".join(
+    chr(cp)
+    for cp in range(0x10FFFF)
+    if unicodedata.category(chr(cp)) in ("Mn", "Mc", "Nd", "Pc")
+) + "⁽₍⁾₎⁺₊⁼₌⁻₋⁰₀¹₁²₂³₃⁴₄⁵₅⁶₆⁷₇⁸₈⁹₉"
+
+PRINTABLE_CHARACTERS = "".join(
+    chr(cp)
+    for cp in range(0x10FFFF)
+    if unicodedata.category(chr(cp)) not in ("Cc", "Co", "Cn", "Cs")
+)
 
 # References:
 #   ASM386 Assembly Language Reference, document number 469165-003, https://mirror.math.princeton.edu/pub/oldlinux/Linux.old/Ref-docs/asm-ref.pdf.
@@ -179,7 +190,7 @@ class ParserX86Intel(ParserX86):
 
         # Comment.
         self.comment = pp.Word(";#", exact=1) + pp.Group(
-            pp.ZeroOrMore(pp.Word(pp.printables + NON_ASCII_PRINTABLE_CHARACTERS))
+            pp.ZeroOrMore(pp.Word(PRINTABLE_CHARACTERS))
         ).setResultsName(self.comment_id)
 
         # Types.
