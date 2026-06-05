@@ -12,31 +12,15 @@ from osaca.parser.label import LabelOperand
 from osaca.parser.memory import MemoryOperand
 from osaca.parser.register import RegisterOperand
 
-## TODO(egg): Switch to allowing all non-ASCII printables, based on the assumption that no assembler
-# will ever use non-ASCII white space and syntax.
+# We assume any non-ASCII printable characters can be part of identifiers; this is based on the
+# assumption that no assembler uses non-ASCII white space and syntax characters.
 # This approach is described at the end of https://www.unicode.org/reports/tr55/#Whitespace-Syntax.
 # It is appropriate for tools, such as this one, which process source code but do not fully validate
 # it (in this case, that’s the job of the assembler).
-# Unicode 3.0-style definition because we do not have the UCD in the Python standard library, see
-# the derivation in Table 2 of UAX #31, https://www.unicode.org/reports/tr31/#Table_Lexical_Classes_for_Identifiers.
-# See also Table 5-7 in https://www.unicode.org/versions/Unicode3.0.0/ch05.pdf#page=31, and
-# https://www.unicode.org/reports/tr55/#Evolution-Unicode-3.
-IDENTIFIER_START_CHARACTERS = "".join(
-    chr(cp)
-    for cp in range(0x10FFFF)
-    if unicodedata.category(chr(cp)).startswith("L") or unicodedata.category(chr(cp)) == "Nl"
-) + "∂𝛛𝜕𝝏𝞉𝟃∇𝛁𝛻𝜵𝝯𝞩∞"
-
-IDENTIFIER_CONTINUE_CHARACTERS = IDENTIFIER_START_CHARACTERS + "".join(
-    chr(cp)
-    for cp in range(0x10FFFF)
-    if unicodedata.category(chr(cp)) in ("Mn", "Mc", "Nd", "Pc")
-) + "⁽₍⁾₎⁺₊⁼₌⁻₋⁰₀¹₁²₂³₃⁴₄⁵₅⁶₆⁷₇⁸₈⁹₉"
-
 PRINTABLE_CHARACTERS = "".join(
     chr(cp)
-    for cp in range(0x10FFFF)
-    if unicodedata.category(chr(cp)) not in ("Cc", "Co", "Cn", "Cs")
+    for cp in range(0x80, 0x10FFFF + 1)
+    if unicodedata.category(chr(cp)) not in ("Cc", "Cs")
 )
 
 # References:
@@ -221,8 +205,8 @@ class ParserX86Intel(ParserX86):
         # Identifier.  Note that $ is not mentioned in the ASM386 Assembly Language Reference,
         # but it is mentioned in the MASM syntax.  < and > apparently show up in C++ mangled names.
         # ICC allows ".", at least in labels.
-        first = pp.Word(pp.alphas + NON_ASCII_PRINTABLE_CHARACTERS + ".$?@_<>", exact=1)
-        rest = pp.Word(pp.alphanums + NON_ASCII_PRINTABLE_CHARACTERS + ".$?@_<>")
+        first = pp.Word(pp.alphas + PRINTABLE_CHARACTERS + "$?@_<>", exact=1)
+        rest = pp.Word(pp.alphanums + PRINTABLE_CHARACTERS + "$?@_<>")
         identifier = pp.Group(
             pp.Combine(first + pp.Optional(rest)).setResultsName("name")
         ).setResultsName("identifier")
