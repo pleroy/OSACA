@@ -666,8 +666,8 @@ class KernelDG(nx.DiGraph):
             edge = graph.edges[u, v] if (u, v) in graph.edges else graph.edges[v, u]
             edge["color"] = color
 
-        for n, node in graph.nodes.items():
-            node["tooltip"] = self._get_node_by_lineno(int(n)).line
+        for ln, node in graph.nodes.items():
+            node["tooltip"] = self._get_node_by_lineno(graph, ln).line
         for edge in graph.edges.values():
             if "operand" in edge:
                 operand = edge["operand"]
