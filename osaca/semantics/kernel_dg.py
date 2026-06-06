@@ -683,9 +683,9 @@ class KernelDG(nx.DiGraph):
         comments = [
             n for n, node in graph.nodes.items()
             if node["instruction_form"].comment is not None
-                and not node["instruction_form"].mnemonic
-                and not node["instruction_form"].label
-                and not node["instruction_form"].directive
+            and not node["instruction_form"].mnemonic
+            and not node["instruction_form"].label
+            and not node["instruction_form"].directive
         ]
         graph.remove_nodes_from(comments)
         mapping = {}

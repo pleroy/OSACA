@@ -23,6 +23,7 @@ NON_ASCII_PRINTABLE_CHARACTERS = "".join(
     if unicodedata.category(chr(cp)) not in ("Cc", "Zl", "Zp", "Cs", "Cn")
 )
 
+
 # References:
 #   ASM386 Assembly Language Reference, document number 469165-003, https://mirror.math.princeton.edu/pub/oldlinux/Linux.old/Ref-docs/asm-ref.pdf.
 #   Microsoft Macro Assembler BNF Grammar, https://learn.microsoft.com/en-us/cpp/assembler/masm/masm-bnf-grammar?view=msvc-170.
